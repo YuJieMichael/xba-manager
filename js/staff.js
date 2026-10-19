@@ -1,6 +1,7 @@
 // 职员：训练员、营养师、队医
 (function (X) {
   var U = X.U, St = {};
+  var P = function () { return X.P; };
   X.Staff = St;
 
   var SURN = '王李张刘陈杨黄赵吴周徐孙马朱胡郭何高林罗郑梁谢宋唐许韩冯邓曹彭曾萧田董袁潘于蒋蔡余杜叶程苏魏吕丁任沈姚卢姜崔钟谭陆汪范金石廖贾夏韦付方白邹孟熊秦邱江尹薛闫段雷侯龙史陶黎贺顾毛郝龚邵万钱严覃武戴莫孔向汤';
@@ -20,6 +21,19 @@
 
   St.effLevel = function (s) { return s ? s.eff : 0; };
 
+  // 名人堂球员退役后回队当职员（传奇职员：能力比级别高一级、薪水打五折，一直等你雇佣）
+  St.legend = function (S, p) {
+    var type = p.lead >= 55 || (p.iq.off + p.iq.def + p.iq.team) / 3 >= 50 ? 'trainer' : p.a.sta >= p.a.str ? 'nutri' : 'doctor';
+    var level = Math.max(3, Math.min(10, Math.round((p.peak || P().ovr(p)) / 10)));
+    var s = {
+      id: U.uid(S, 's'), type: type, level: level, eff: Math.min(10, level + 1), legend: true, fromPid: p.id,
+      name: p.name + '（传奇）', age: p.age, salary: Math.round(600 * Math.pow(level, 1.6) / 20) * 10, contract: 40, teamId: null, slot: null
+    };
+    S.staffPool.unshift(s);
+    X.World.msg(S, '🎖 名人堂球员 ' + p.name + ' 退役后愿意回队担任' + X.STAFF_TYPES[type] + '（' + level + '级，能力更强、薪水五折），到「职员管理」雇佣他', 'staff');
+    return s;
+  };
+
   // 训练员与年轻球员的切合度（隐藏，0.2~1）
   St.fit = function (s, p) {
     var str = s.id + '|' + p.id, h = 0;
@@ -29,7 +43,7 @@
 
   St.refreshPool = function (S) {
     var pool = S.staffPool || [];
-    pool = pool.filter(function () { return U.chance(0.6); });
+    pool = pool.filter(function (s) { return s.legend || U.chance(0.6); });
     var types = ['trainer', 'nutri', 'doctor'];
     while (pool.length < 18) pool.push(St.gen(S, types[pool.length % 3], U.wpick([8, 9, 9, 8, 7, 5, 4, 3, 2, 1]) + 1));
     S.staffPool = pool;

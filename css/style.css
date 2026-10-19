@@ -284,3 +284,13 @@ svg.lc { width: 100%; height: auto; display: block; background: #fffdf8; border-
 .ach-c { border: 1px solid #ddd; border-radius: 6px; padding: 6px 8px; background: #f4f1ec; color: #888; }
 .ach-c.on { background: linear-gradient(#fffbe8, #fff0c8); border-color: #e3b04a; color: var(--ink); }
 .ach-n { font-weight: bold; }
+/* 小地图 / 投篮分布 */
+.court-svg { width: 100%; max-width: 640px; display: block; margin: 0 auto 8px; border: 3px solid #8a5a2a; border-radius: 4px; }
+#mini-court .court-svg { max-width: 460px; }
+.shot-pop { animation: pop .4s ease-out; transform-box: fill-box; transform-origin: center; }
+.court-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; margin: 4px 0 6px; }
+.court-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; border: 1px solid #333; vertical-align: -1px; }
+/* 性格 / 联盟 / 全明星 */
+.pers { margin: 3px 0; } .pers-t { background: #e8f0ff; border: 1px solid #a9c4ea; border-radius: 10px; padding: 0 6px; color: #234a7a; }
+td.mono { font-family: Consolas, monospace; letter-spacing: 1px; white-space: nowrap; }
+.br-t span { overflow: hidden; text-overflow: ellipsis; }

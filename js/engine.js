@@ -24,7 +24,7 @@
   // ===== 个人能力 =====
   var CLUTCH = false; // 当前是否关键时刻（第四节/加时，分差 5 分内）
   function tr(p, id) { return p._tr && p._tr[id]; }
-  function condF(p) { return P.staminaF(p._st) * (p._morale || 1); }
+  function condF(p) { return P.staminaF(p._st) * (p._morale || 1) * (p._boost || 1) * (p.persona === 'hothead' ? 1.03 : 1) * (CLUTCH && p.persona === 'bigheart' ? 1.05 : 1); }
 
   function methodAbility(p, m) {
     var a = p.a, v;
@@ -72,7 +72,7 @@
       nslots: kind === 'pro' ? 5 : 3, cols: kind === 'pro' ? PRO_COLS : STREET_COLS,
       roster: cfg.players.filter(function (p) { return p.inj <= 0; }),
       presets: cfg.presets, config: cfg.config, prof: cfg.prof || { off: {}, def: {} },
-      status: cfg.status == null ? 1 : cfg.status, home: !!cfg.home,
+      status: (cfg.status == null ? 1 : cfg.status) * P.chemistry(cfg.players), home: !!cfg.home,
       court: [], curPreset: -1, pts: 0, fouls: 0, box: {}, trailLock: false, leadLock: false,
       used: { off: {}, def: {} }, form: 1 + U.gauss() * 0.035
     };
@@ -116,6 +116,8 @@
       if (best) { court[s] = best; used[best.id] = 1; }
     }
     side.court = court;
+    var hasLeader = court.some(function (p) { return p && p.persona === 'leader'; });
+    side.roster.forEach(function (p) { p._boost = hasLeader && p.persona !== 'leader' ? 1.02 : 1; });
     if (!quiet && lg) {
       for (s = 0; s < side.nslots; s++) {
         if (prev[s] && court[s] && prev[s] !== court[s]) lg(side.name + ' 换人：' + court[s].name + ' 替换 ' + prev[s].name, 'sub');
@@ -223,9 +225,17 @@
     var q = 0, clock = qlen, hq = 0, aq = 0;
     var drainMul = kind === 'pro' ? 1 : 1.2;
 
-    function lg(txt, type) {
+    function lg(txt, type, sh) {
       if (!opts.log) return;
-      log.push({ q: q, t: U.fmtTime(clock), txt: txt, hs: H.pts, as: A.pts, type: type || '' });
+      var e = { q: q, t: U.fmtTime(clock), txt: txt, hs: H.pts, as: A.pts, type: type || '' };
+      if (sh) e.sh = sh;
+      log.push(e);
+    }
+    // 出手位置：[进攻方 h/a, 距篮筐(英尺), 角度(度), 结果 1 进 0 不进 2 被盖]
+    var SPOT = { in: [2, 8], drv: [1, 6], mid: [9, 19], thr: [22.5, 26], fb: [0.5, 4] };
+    function spot(side, zone, res) {
+      var r = SPOT[zone] || SPOT.mid, ang = zone === 'thr' && Math.random() < 0.25 ? (Math.random() < 0.5 ? -82 : 82) : U.ri(-80, 80);
+      return [side === H ? 'h' : 'a', U.r1(U.rf(r[0], r[1])), ang, res];
     }
     function box(side, p) { return side.box[p.id]; }
     function scoreDiff(side) { return side === H ? H.pts - A.pts : A.pts - H.pts; }
@@ -272,7 +282,7 @@
       if (!opts.injuries) return true;
       for (var i = 0; i < side.court.length; i++) {
         var p = side.court[i];
-        var pi = 0.00011 + (p._st < 80 ? (80 - p._st) * 0.00004 : 0);
+        var pi = (0.00011 + (p._st < 80 ? (80 - p._st) * 0.00004 : 0)) * (p.persona === 'glass' ? 1.8 : p.persona === 'iron' ? 0.5 : 1);
         if (Math.random() < pi) {
           var inj = X.INJURIES[U.wpick(X.INJURIES.map(function (x) { return 30 / (x.min + x.max); }))];
           var rounds = U.ri(inj.min, inj.max);
@@ -381,7 +391,7 @@
         if (flashy && m.kind === 'pass' && helper) txt = fill(U.pick(TXT.alley), who);
         else if (flashy) txt = prefix + fill(U.pick(TXT.dunk), who);
         else txt = prefix + fill(U.pick(TXT[m.zone + '_make']), who);
-        lg(txt + '（' + m.cn + '）', 'score');
+        lg(txt + '（' + m.cn + '）', 'score', spot(off, m.zone, 1));
         if (fouled) { lg(dfd.name + ' 防守犯规', 'foul'); freeThrows(off, sh, 1, true); }
       } else if (fouled) {
         b.fga--; if (isThree) b.tpa--; // 投篮犯规未进不计出手
@@ -394,9 +404,9 @@
           var bws = def.court.map(function (p, s) { return Math.pow(p.a.blk * rw(X.DEF_POS_RANK.blk[def.cols[s]]) * P.heightScore(p) / 50, 2); });
           var bl = def.court[U.wpick(bws)];
           var pBlk = U.clamp((0.06 + 0.22 * (bl.a.blk / 100) + (P.effH(bl) - P.effH(sh)) / 200) * (tr(bl, 'blocker') ? 1.4 : 1), 0.02, 0.45);
-          if (Math.random() < pBlk) { blocked = true; box(def, bl).blk++; lg(bl.name + ' 一记大帽扇飞了 ' + sh.name + ' 的出手！', 'blk'); }
+          if (Math.random() < pBlk) { blocked = true; box(def, bl).blk++; lg(bl.name + ' 一记大帽扇飞了 ' + sh.name + ' 的出手！', 'blk', spot(off, m.zone, 2)); }
         }
-        if (!blocked) lg(prefix + fill(U.pick(TXT[m.zone + '_miss']), who), '');
+        if (!blocked) lg(prefix + fill(U.pick(TXT[m.zone + '_miss']), who), '', spot(off, m.zone, 0));
       }
       // 犯规满离场
       if (fouled && dfd._pf >= foulOut) {
@@ -479,7 +489,7 @@
       };
       [H, A].forEach(function (side) { side.roster.forEach(function (p) { res.stam[p.id] = p._st; }); });
       // 清理临时字段
-      [H, A].forEach(function (side) { side.roster.forEach(function (p) { delete p._st; delete p._out; delete p._pf; delete p._sec; delete p._morale; delete p._tr; }); });
+      [H, A].forEach(function (side) { side.roster.forEach(function (p) { delete p._st; delete p._out; delete p._pf; delete p._sec; delete p._morale; delete p._tr; delete p._boost; }); });
       return res;
     }
   };

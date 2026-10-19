@@ -16,6 +16,7 @@
   W.dayLabel = function (S) {
     var r = W.roundOfDay(S.day);
     if (r) return '第 ' + S.season + ' 赛季 第 ' + r + ' 轮';
+    if (X.Playoffs && X.Playoffs.isDay(S.day)) return '第 ' + S.season + ' 赛季 ' + X.Playoffs.label(S.day);
     return '第 ' + S.season + ' 赛季 ' + (S.day === 13 ? '赛季中休息日' : '赛季末休息日');
   };
 
@@ -243,6 +244,7 @@
     st.presets = stt.presets; st.config = stt.config;
     S.user.onboarded = true;
     X.XCup.setup(S, true);
+    X.Alliance.init(S);
     X.Goals.newSeason(S);
     X.Cups.daily(S);
     var lg = W.league(S, pro.leagueId);
@@ -352,7 +354,8 @@
       if (isUser) {
         r.mid = W.saveMatch(S, 'league', res, h, a, 'pro', { round: round, league: lg.name, proTP: W.earnProTP(S, res, h.isUser) });
         out.userGame = r.mid;
-        userGameFinance(S, h.isUser ? h : a, h.isUser, res);
+        userGameFinance(S, h.isUser ? h : a, h.isUser, res, h.isUser ? a.id : h.id);
+        X.Rivals.afterGame(S, h.isUser ? a.id : h.id, h.isUser ? res.hs - res.as : res.as - res.hs, 'league');
       }
       // AI 球迷变化
       [h, a].forEach(function (t) {
@@ -373,17 +376,20 @@
     return Math.round(Math.min(seats, demand));
   };
 
-  function userGameFinance(S, team, home, res) {
+  W.userGameFinance = function (S, team, home, res, oppId) { return userGameFinance(S, team, home, res, oppId); };
+  function userGameFinance(S, team, home, res, oppId) {
     var my = home ? res.hs : res.as, op = home ? res.as : res.hs, won = my > op, margin = my - op;
+    var rival = oppId && X.Rivals.isRival(S, oppId), rm = rival ? 1.5 : 1;
     if (home && !(res.forfeit && res.forfeit.pre)) {
       var att = W.attendance(S, team);
       team.lastAtt = att;
-      W.earn(S, att * team.ticket, '主场门票（' + att + '人）');
+      W.earn(S, att * team.ticket * rm, '主场门票（' + att + '人）' + (rival ? '·宿敌对决' : ''));
       var jersey = U.sum(W.teamPlayers(S, team).map(function (p) { return p.support / 100; })) * team.fans * (won ? 1.4 : 1.0);
-      W.earn(S, jersey, '球衣销售');
+      W.earn(S, jersey * rm, '球衣销售' + (rival ? '·宿敌对决' : ''));
     }
     var df = won ? 0.008 + Math.min(30, margin) * 0.0007 : -0.004 + Math.max(-30, margin) * 0.0002;
     if (!home) df *= 0.5;
+    if (rival) df *= 2;
     var before = team.fans;
     team.fans = Math.max(300, Math.round(team.fans * (1 + df) + (won ? 15 : 0)));
     // 向本级别基础球迷数缓慢靠拢
@@ -461,11 +467,24 @@
       });
     }
 
+    // 1.2 季后赛
+    if (X.Playoffs.isDay(S.day)) {
+      Object.keys(S.players).forEach(function (id) {
+        var p = S.players[id];
+        if (p.inj > 0 && p.teamId && S.teams[p.teamId] && S.teams[p.teamId].kind === 'pro') { p.inj -= 1; if (p.inj === 0 && S.teams[p.teamId].isUser) W.msg(S, p.name + ' 伤愈复出', 'inj'); }
+      });
+      X.Playoffs.playDay(S, out);
+    }
+
     // 1.5 XBA杯
     X.XCup.playDay(S, out);
 
     // 2. 街球杯赛
     X.Cups.resolveDay(S, out);
+
+    // 2.5 联盟杯 / 联盟至尊杯
+    if (S.day === 8) X.Alliance.allianceCup(S, out);
+    if (S.day === 22) X.Alliance.supremeCup(S, out);
 
     // 3. 转会市场结算
     X.Market.resolve(S, out);
@@ -476,10 +495,10 @@
     var proTrainer = pro.staff.trainer, recPro = X.Staff.recovery(pro), recSt = X.Staff.recovery(street);
     W.teamPlayers(S, pro).forEach(function (p) {
       P.proDailyTrain(S, p, proTrainer);
-      p.st = Math.min(100, p.st + 40 + recPro + (p.train === "rest" ? 10 : 0));
+      p.st = Math.min(100, p.st + 40 + recPro + (p.train === "rest" ? 10 : 0) + (p.persona === 'lazy' ? 8 : 0));
     });
     W.teamPlayers(S, street).forEach(function (p) {
-      p.st = Math.min(100, p.st + 45 + recSt);
+      p.st = Math.min(100, p.st + 45 + recSt + (p.persona === 'lazy' ? 8 : 0));
       p.mood = Math.min(100, p.mood + 25);
       if (p.inj > 0) { p.inj -= 1; if (p.inj === 0) W.msg(S, p.name + '（街球）伤愈', 'inj'); }
     });
@@ -513,11 +532,11 @@
     }
     // 战术等级（街球队）
     // 5. 赛季中休息日：极限球员市场开放
-    if (S.day === 13) W.msg(S, '赛季过半，转会市场「极限球员」已开放！', 'market');
+    if (S.day === 13) { W.msg(S, '赛季过半，转会市场「极限球员」已开放！', 'market'); X.AllStar.run(S, out); }
 
     // 6. 赛季末
     var seasonEnded = false;
-    if (S.day === 27) { W.seasonEnd(S, out); seasonEnded = true; }
+    if (S.day === X.SEASON_END) { W.seasonEnd(S, out); seasonEnded = true; }
 
     S.dayNo += 1;
     if (seasonEnded) { S.day = 0; }
@@ -527,6 +546,7 @@
     X.Market.daily(S);
     X.Cups.daily(S);
     if (S.dayNo % 3 === 0) W.genAdOffers(S);
+    X.Alliance.daily(S);
     X.Goals.snapshot(S);
     X.Goals.checkGoals(S, false);
     X.Goals.checkAch(S);
@@ -542,19 +562,29 @@
     S.leagues.forEach(function (lg) {
       var st = W.standings(S, lg);
       var L = W.levelInfo(lg.level);
-      st.slice(0, 3).forEach(function (t, i) {
-        if (t.isUser) {
-          W.earn(S, L.prize[i], lg.name + ' 第' + (i + 1) + '名奖金');
-          S.user.trophies.push({ season: S.season, name: lg.name + (i === 0 ? ' 冠军' : i === 1 ? ' 亚军' : ' 季军') });
-          W.msg(S, '恭喜！球队获得 ' + lg.name + ' 第 ' + (i + 1) + ' 名，奖金 ' + U.money(L.prize[i]), 'fin');
-        }
+      // 季后赛决定冠军、亚军、四强；常规赛第一另有提示
+      var po = X.Playoffs.results(S, lg);
+      var places = po ? [[po.champion], [po.runner], po.semis] : [[st[0].id], [st[1].id], [st[2].id]];
+      var names = po ? [' 总冠军', ' 亚军', ' 四强'] : [' 冠军', ' 亚军', ' 季军'];
+      places.forEach(function (ids, i) {
+        ids.forEach(function (tid) {
+          var t = S.teams[tid];
+          if (!t || !t.isUser) return;
+          var prize = i === 2 && po ? Math.round(L.prize[2] / 2) : L.prize[i];
+          W.earn(S, prize, lg.name + names[i] + '奖金');
+          S.user.trophies.push({ season: S.season, name: lg.name + (i === 0 ? ' 冠军' : names[i]) });
+          W.msg(S, '恭喜！球队获得 ' + lg.name + names[i] + '，奖金 ' + U.money(prize), 'fin');
+        });
       });
-      summary.champions.push({ league: lg.name, team: st[0].name, isUser: st[0].isUser });
+      if (st[0].isUser) { S.user.trophies.push({ season: S.season, name: lg.name + ' 常规赛第一' }); W.msg(S, '球队获得 ' + lg.name + ' 常规赛第一！', 'fin'); }
+      var champ = S.teams[places[0][0]] || st[0];
+      summary.champions.push({ league: lg.name, team: champ.name, isUser: !!champ.isUser });
     });
     X.Awards.season(S);
     var xc = S.xcup;
     if (xc && xc.ko.champ && xc.ko.champ.champion && S.teams[xc.ko.champ.champion]) summary.xcup = S.teams[xc.ko.champ.champion].name;
     S.history.unshift(summary);
+    X.Rivals.seasonDecay(S);
 
     // 所得税
     var L = S.user.ledger[S.season];
@@ -584,6 +614,7 @@
         p.career.push({ season: S.season, team: t.name, stats: p.stats });
         p.stats = P.emptyStats();
         X.Awards.onRetire(S, p, t);
+        if (t.isUser && X.Awards.inHof(S, p.id)) X.Staff.legend(S, p);
         W.deletePlayer(S, p);
       } else if (p.age === p.retireAge - 1 && t.isUser) {
         W.msg(S, p.name + ' 将于下个赛季结束后退役', 'player');

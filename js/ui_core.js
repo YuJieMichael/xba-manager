@@ -10,8 +10,8 @@
     { title: '俱乐部', short: '俱乐部', icon: '🏠', items: [['home', '俱乐部首页'], ['msgs', '系统消息'], ['trophies', '荣誉室'], ['datacenter', '数据中心']] },
     { title: '球队管理', icon: '👥', items: [['players', '球员管理'], ['training', '球员训练'], ['staff', '职员管理'], ['arena', '球场建设'], ['finance', '球队财政']] },
     { title: '战术设定', icon: '📋', items: [['tac_pro', '职业战术'], ['tac_street', '街球战术']] },
-    { title: '赛程管理', icon: '🏆', items: [['league', '职业联赛'], ['xcup', 'XBA杯'], ['cups', '街球杯赛']] },
-    { title: '竞技中心', icon: '🏀', items: [['center', '训练中心'], ['wk', '胜者为王'], ['mymatches', '我的比赛']] },
+    { title: '赛程管理', icon: '🏆', items: [['league', '职业联赛'], ['xcup', 'XBA杯'], ['allstar', '全明星'], ['cups', '街球杯赛']] },
+    { title: '竞技中心', icon: '🏀', items: [['center', '训练中心'], ['wk', '胜者为王'], ['alliance', '篮球联盟'], ['mymatches', '我的比赛']] },
     { title: '转会市场', icon: '💰', items: [['market', '转会市场'], ['draft', '职业选秀']] },
     { title: '其他', icon: '🛒', items: [['shop', '道具商店'], ['manual', '经理手册'], ['settings', '存档设置']] }
   ];
@@ -114,7 +114,7 @@
       '<div>综合 <b class="ovr">' + UI.ovrTag(P.ovr(p)) + '</b></div>' + (p.star ? '<div>升星 <span class="pstar">' + '★'.repeat(p.star) + '</span></div>' : '') + '</div></div>';
     h += '<div class="card-meta">' + (t ? UI.teamLink(t) : '<span class="muted">自由球员</span>') +
       (!street && t ? ' · 合同 ' + p.contract + ' 轮' : '') + (P.potVisible(S, p) || p.seen.pot ? ' · ' + UI.stars(P.stars(p)) : '') + (p.scoutGrade != null && X.Market.GRADES[p.scoutGrade] ? ' <span class="grade" title="球探潜力评价" style="background:' + X.Market.GRADES[p.scoutGrade].c + '">' + X.Market.GRADES[p.scoutGrade].cn + '</span>' : '') +
-      UI.traitTags(p) + (p.inj > 0 ? '<div class="red">伤病：' + esc(p.injName) + '，还需 ' + p.inj + ' 轮</div>' : '') + '</div>';
+      UI.personaTag(p) + UI.traitTags(p) + (p.inj > 0 ? '<div class="red">伤病：' + esc(p.injName) + '，还需 ' + p.inj + ' 轮</div>' : '') + '</div>';
     h += '<div class="minitabs">' + [['ab', '能力'], ['st', '统计'], ['hi', '履历']].map(function (x) {
       return '<span class="' + (tab === x[0] ? 'on' : '') + '" data-act="tab" data-key="card" data-val="' + x[0] + '">' + x[1] + '</span>';
     }).join('|') + '</div>';

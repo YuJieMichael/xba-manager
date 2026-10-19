@@ -95,6 +95,9 @@
     if (err) { W().msg(S, '双倍训练卡到期，自动续约失败：' + err, 'sys'); u.doubleAuto = false; }
   };
 
+  C.playStreet = function (S, opp, type, opts) { return playStreet(S, opp, type, opts); };
+  C.addStreetPts = function (S, pts) { return addStreetPts(S, pts); };
+
   // ===== 训练中心 =====
   C.trainOpponents = function (S) {
     if (!S.trainOpps || S.trainOpps.day !== S.dayNo) {

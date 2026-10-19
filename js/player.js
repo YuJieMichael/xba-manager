@@ -90,7 +90,7 @@
       lead: 0, will: 0, st: 100, mood: U.ri(70, 100), inj: 0, injName: '',
       contract: 0, salary: 0, teamId: opt.teamId || null, green: false, joined: S.dayNo || 0,
       focus: 'team', retireAge: 0, train: '', tp: 0, support: U.ri(5, 20), hGrow: age <= 21 ? U.ri(0, 9) : 0,
-      seen: {}, stats: P.emptyStats(), career: [], hist: [], decline: U.ri(29, 32)
+      seen: {}, stats: P.emptyStats(), career: [], hist: [], decline: U.ri(29, 32), persona: P.rollPersona()
     };
     // 身材好的球员潜力往往不会很高
     var gapBase = opt.gap != null ? opt.gap : gapForAge(age) * (h > 212 ? 0.75 : 1);
@@ -120,6 +120,21 @@
     return X.TRAITS.filter(function (t) { return t.ok(p); }).map(function (t) { return t.id; });
   };
   P.hasTrait = function (p, id) { return X.TRAITS.some(function (t) { return t.id === id && t.ok(p); }); };
+
+  P.rollPersona = function () { return X.PERSONAS[U.wpick(X.PERSONAS.map(function (x) { return x.w; }))].id; };
+  P.persona = function (p) { if (!p.persona) p.persona = P.rollPersona(); return X.PERSONAS.find(function (x) { return x.id === p.persona; }) || X.PERSONAS[0]; };
+  P.trainMul = function (p) { return p.persona === 'gymrat' ? 1.2 : p.persona === 'lazy' ? 0.8 : 1; };
+  // 球队化学反应（0.95 ~ 1.04），作用于整队发挥
+  P.chemistry = function (players) {
+    var c = 1, hot = 0, lead = 0;
+    players.forEach(function (p) {
+      if (p.persona === 'glue') c += 0.01;
+      if (p.persona === 'leader' && lead < 2) { c += 0.01; lead++; }
+      if (p.persona === 'hothead') hot++;
+    });
+    if (hot > 1) c -= 0.015 * (hot - 1);
+    return Math.max(0.95, Math.min(1.04, c));
+  };
 
   P.emptyStats = function () {
     return { gp: 0, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0 };
@@ -152,7 +167,7 @@
     var gf = gapF(p, k);
     if (gf === 0) return { gain: 0, cost: 0, msg: X.ATTR_CN[k] + ' 已达到潜力上限' };
     var moodF = 0.6 + 0.4 * p.mood / 100;
-    var gain = Math.min(3, U.rf(0.8, 3) * gf * moodF * (1 + tl * 0.02));
+    var gain = Math.min(3, U.rf(0.8, 3) * gf * moodF * (1 + tl * 0.02) * P.trainMul(p));
     gain = Math.min(gain, p.m[k] - p.a[k]);
     p.a[k] += gain; p.tp -= cost;
     p.st = Math.max(0, p.st - 1); p.mood = Math.max(0, p.mood - 1);
@@ -181,7 +196,7 @@
     var gf = gapF(p, k);
     if (gf === 0) return { gain: 0, cost: 0, msg: X.ATTR_CN[k] + ' 已达到潜力上限' };
     var ageF = p.age <= 24 ? 1 : p.age <= 28 ? 0.85 : p.age <= 31 ? 0.65 : 0.45;
-    var gain = Math.min(3, U.rf(0.8, 3) * Math.max(0.4, gf) * ageF * (1 + tl * 0.02));
+    var gain = Math.min(3, U.rf(0.8, 3) * Math.max(0.4, gf) * ageF * (1 + tl * 0.02) * P.trainMul(p));
     gain = Math.min(gain, p.m[k] - p.a[k]);
     p.a[k] += gain; S.user.proTP -= cost;
     p.st = Math.max(0, p.st - 1);
@@ -224,7 +239,7 @@
     if (k === 'rest') return 0;
     var tl = trainer ? X.Staff.effLevel(trainer) : 0;
     var ageF = p.age <= 22 ? 1.3 : p.age <= 25 ? 1.1 : p.age <= 28 ? 0.9 : p.age <= 31 ? 0.6 : 0.35;
-    var gf = gapF(p, k); var gain = U.rf(0.8, 1.6) * (gf > 0 ? Math.max(0.4, gf) : 0) * ageF * (1 + tl * 0.07) * (0.7 + 0.3 * P.staminaF(p.st));
+    var gf = gapF(p, k); var gain = U.rf(0.8, 1.6) * (gf > 0 ? Math.max(0.4, gf) : 0) * ageF * (1 + tl * 0.07) * (0.7 + 0.3 * P.staminaF(p.st)) * P.trainMul(p);
     gain = Math.min(gain, Math.max(0, p.m[k] - p.a[k]));
     p.a[k] += gain;
     p.st = Math.max(0, p.st - 4);

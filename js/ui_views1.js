@@ -96,10 +96,11 @@
       if (g) {
         var home = g[0] === pro.id, opp = S.teams[home ? g[1] : g[0]];
         var rank = W().standings(S, lg).indexOf(opp) + 1;
-        next = '<div class="next">今日联赛（第 ' + round + ' 轮，' + (home ? '主场' : '客场') + '）：' + UI.teamLink(pro) + ' <b>VS</b> ' + UI.teamLink(opp) + '　对手排名第 ' + rank + '（' + opp.rec.w + '胜' + opp.rec.l + '负）<br>' +
+        next = '<div class="next">今日联赛（第 ' + round + ' 轮，' + (home ? '主场' : '客场') + '）：' + UI.teamLink(pro) + ' <b>VS</b> ' + UI.teamLink(opp) + '　对手排名第 ' + rank + '（' + opp.rec.w + '胜' + opp.rec.l + '负）' + (X.Rivals.isRival(S, opp.id) ? ' <b class="red">🔥 宿敌对决！门票和球衣收入 ×1.5</b>' : '') + '<br>' +
           UI.link('设置职业战术 →', 'go', { r: 'tac_pro' }) + '　' + UI.link('查看对手比赛录像 →', 'go', { r: 'league', a: 'video:' + opp.id }) + '</div>';
       }
-    } else next = '<div class="next">今天是' + (S.day === 13 ? '赛季中休息日，「极限球员」市场开放' : '赛季末休息日') + '，没有联赛。</div>';
+    } else if (X.Playoffs.isDay(S.day)) next = UI.playoffToday(S);
+    else next = '<div class="next">今天是' + (S.day === 13 ? '赛季中休息日：「极限球员」市场开放，并将举行<b>全明星周末</b>（全明星赛、三分大赛、扣篮大赛）' : '赛季末休息日') + '，没有联赛。</div>';
     h += UI.box('今日赛程', next + '<div class="muted small">点击右上角「进入下一天」进行今天的比赛（职业联赛 9:00 开赛，会员可观看现场文字直播）。</div>');
     h += UI.goalsBox ? UI.goalsBox(S) : '';
     // 待办
@@ -136,7 +137,7 @@
   }
   UI.standingsTable = standingsTable;
 
-  var TYPE_CN = { league: '职业联赛', cup: '街球杯赛', train: '训练赛', friendly: '友谊赛', show: '表演赛', wk: '胜者为王', xcup: 'XBA杯' };
+  var TYPE_CN = { league: '职业联赛', cup: '街球杯赛', train: '训练赛', friendly: '友谊赛', show: '表演赛', wk: '胜者为王', xcup: 'XBA杯', playoff: '季后赛', allstar: '全明星赛', challenge: '联盟挑战' };
   function matchList(S, list) {
     return '<table class="grid"><tr><th>时间</th><th>类型</th><th>主队</th><th>比分</th><th>客队</th><th></th></tr>' + list.map(function (m) {
       var meH = S.teams[m.home.id] && S.teams[m.home.id].isUser, meA = S.teams[m.away.id] && S.teams[m.away.id].isUser;
@@ -164,7 +165,7 @@
         if (P.isMaxed(p) && (p.star || 0) < X.STAR_MAX) ops.push(UI.link('升星', 'starup', { pid: p.id }, 'hot'));
         return '<tr><td>' + UI.pname(p) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.stam(p.st) + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + U.money(p.salary) + '</td><td class="' + (p.contract < 10 ? 'red' : '') + '">' + p.contract + '</td><td>' + Math.round(p.support) + '</td><td>' + ops.join(' ') + '</td></tr>';
       }).join('') + '</table>';
-      h += '<div class="sumline">球员工资总额：' + UI.money(pay) + '/轮　工资帽：' + UI.money(cap) + '　阵容状态：<b>' + Math.round(W().lineupStatus(S, pro) * 100) + '%</b>　人数 ' + ps.length + '/' + M().PRO_MAX + '（最少 ' + M().PRO_MIN + '）' +
+      h += '<div class="sumline">球员工资总额：' + UI.money(pay) + '/轮　工资帽：' + UI.money(cap) + '　阵容状态：<b>' + Math.round(W().lineupStatus(S, pro) * 100) + '%</b>　化学反应：<b title="由球员性格决定：领袖、老好人加分，刺头多了扣分">' + Math.round(P.chemistry(ps) * 100) + '%</b>　人数 ' + ps.length + '/' + M().PRO_MAX + '（最少 ' + M().PRO_MIN + '）' +
         (pay > cap ? '　<b class="red">已超工资帽！奢侈税 = 3000 + 超出额×5</b>' : '　<span class="ok">未达工资帽</span>') + '</div>';
       h += '<p class="tip">绿色名字 = 用选拔卡提拔的本土球员，可按市场价出售；其他途径得到的球员只能以市场价的 5% 出售（不流入市场）。</p>';
       h += '<p>球员奖金（下一轮发放，提高士气）：' + [0, 5000, 20000, 50000].map(function (v) { return UI.btn(v ? U.money(v) : '不发', 'bonus', { v: v }, 'sm' + (pro.bonus === v ? ' on' : '')); }).join(' ') + '</p>';

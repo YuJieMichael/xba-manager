@@ -11,7 +11,7 @@
     var lg = W().league(S, UI.leagueView || pro.leagueId) || W().league(S, pro.leagueId);
     var tab = UI.curTab('league', 'sched');
     var h = '<div class="lg-title">' + esc(lg.name) + (lg.id !== pro.leagueId ? '　' + UI.link('← 回到我的联赛', 'lgview', { id: pro.leagueId }) : '') + '</div>';
-    h += UI.tabs('league', [['sched', '联赛赛程'], ['round', '上轮/本轮'], ['rank', '联赛排名'], ['stats', '技术统计'], ['pyramid', '等级示图'], ['video', '比赛录像']], tab);
+    h += UI.tabs('league', [['sched', '联赛赛程'], ['round', '上轮/本轮'], ['rank', '联赛排名'], ['po', '季后赛'], ['stats', '技术统计'], ['rivals', '宿敌'], ['pyramid', '等级示图'], ['video', '比赛录像']], tab);
     var round = W().roundOfDay(S.day);
     var played = lg.results.length;
     if (tab === 'sched') {
@@ -36,6 +36,10 @@
     } else if (tab === 'rank') {
       h += UI.standingsTable(S, W().standings(S, lg), false);
       h += '<p class="muted small">按胜场、净胜分、注册先后排列。' + (lg.level > 1 ? '前 2 名升级（绿色），' : '') + (lg.level < 4 ? '后 4 名降级（红色）。' : '后 4 名失去联赛资格（需重新申请）。') + '第一联赛冠军奖金 1 亿。</p>';
+    } else if (tab === 'po') {
+      h += UI.playoffsView(S, lg);
+    } else if (tab === 'rivals') {
+      h += UI.rivalsView(S);
     } else if (tab === 'stats') {
       var all = [];
       lg.teamIds.forEach(function (tid) { W().teamPlayers(S, S.teams[tid]).forEach(function (p) { if (p.stats.gp >= Math.max(1, Math.floor(played / 3))) all.push(p); }); });
@@ -127,7 +131,8 @@
     }
     if (m.proTP) h += '<div class="tip">职业队训练点 +' + m.proTP + '（当前共 ' + (UI.S.user.proTP || 0) + ' 点，到「球员训练 → 职业队」加点）</div>';
     if (m.tp && Object.keys(m.tp).length) h += '<div class="tip">训练点收获：' + Object.keys(m.tp).map(function (pid) { var p = getP(pid); return esc(p ? p.name : '?') + ' +' + m.tp[pid]; }).join('，') + '</div>';
-    h += UI.tabs('match', [['log', live ? '🔴 现场文字直播' : '文字直播'], ['box', '技术统计']], tab);
+    var hasShots = m.log && m.log.some(function (l) { return l.sh; });
+    h += UI.tabs('match', [['log', live ? '🔴 现场文字直播' : '文字直播'], ['box', '技术统计']].concat(hasShots ? [['shots', '投篮分布']] : []), tab);
     if (tab === 'log') {
       if (!m.log) h += '<div class="muted">文字直播只保留最近 30 场比赛。</div>';
       else {
@@ -135,13 +140,55 @@
         else h += '<div class="live-ctl">' + UI.btn('▶ 回放直播', 'livestart', { id: id }, 'sm') + '　<label><input type="checkbox" data-change="logfilter"' + (UI.logKey ? ' checked' : '') + '> 只看得分和关键事件</label></div>';
         var lines = m.log.slice(0, idx);
         if (UI.logKey && !live) lines = lines.filter(function (l) { return l.type === 'score' || l.type === 'q' || l.type === 'end' || l.type === 'inj' || l.type === 'tac' || l.type === 'blk'; });
+        if (live && hasShots) {
+          var lastSh = null; for (var li = idx - 1; li >= 0; li--) if (m.log[li].sh) { lastSh = m.log[li].sh; break; }
+          h += '<div id="mini-court">' + UI.courtSvg(m, lastSh ? [lastSh] : [], lastSh ? lastSh[0] : 'h', true) + '</div>';
+        }
         h += '<div class="log" id="live-log">' + lines.map(logLine).join('') + '</div>';
       }
+    } else if (tab === 'shots' && hasShots) {
+      var all = m.log.filter(function (l) { return l.sh; }).map(function (l) { return l.sh; });
+      var stat = function (s) { var xs = all.filter(function (x) { return x[0] === s; }); var mk = xs.filter(function (x) { return x[3] === 1; }).length; return mk + '/' + xs.length + '（' + (xs.length ? Math.round(mk / xs.length * 100) : 0) + '%）'; };
+      h += '<div class="court-legend"><span><i style="background:' + m.home.color + '"></i>' + esc(m.home.name) + ' 投中 ' + stat('h') + '，向右进攻</span><span><i style="background:' + m.away.color + '"></i>' + esc(m.away.name) + ' 投中 ' + stat('a') + '，向左进攻</span><span>● 投中　○ 不中　✕ 被盖</span></div>';
+      h += UI.courtSvg(m, all, null, false);
     } else {
       h += UI.box(esc(m.home.name), boxTable(m.box.h, getP)) + UI.box(esc(m.away.name), boxTable(m.box.a, getP));
     }
     if (live) UI.afterRender = startLive;
     return h;
+  };
+  // 全场球场（94×50 英尺）：主队向右进攻，客队向左进攻
+  UI.courtSvg = function (m, shots, offSide, players) {
+    var line = 'stroke="#fff" stroke-width="0.35" fill="none"';
+    var svg = '<svg class="court-svg" viewBox="0 0 94 50"><rect width="94" height="50" fill="#d9a15b"/>' +
+      '<rect x="0.2" y="0.2" width="93.6" height="49.6" ' + line + '/><line x1="47" y1="0" x2="47" y2="50" ' + line + '/><circle cx="47" cy="25" r="6" ' + line + '/>';
+    [[5.25, 1], [88.75, -1]].forEach(function (b) {
+      var bx = b[0], d = b[1];
+      svg += '<rect x="' + (d > 0 ? 0 : 75) + '" y="17" width="19" height="16" fill="#c98a45" ' + line.replace('fill="none"', '') + '/>' +
+        '<path d="M' + (d > 0 ? 0 : 94) + ' 3 L' + (bx + d * 9) + ' 3 A 23.75 23.75 0 0 ' + (d > 0 ? 1 : 0) + ' ' + (bx + d * 9) + ' 47 L' + (d > 0 ? 0 : 94) + ' 47" ' + line + '/>' +
+        '<circle cx="' + bx + '" cy="25" r="0.75" stroke="#f60" stroke-width="0.3" fill="none"/>';
+    });
+    function pos(side, dist, ang) {
+      var bx = side === 'h' ? 88.75 : 5.25, dir = side === 'h' ? -1 : 1, a = ang * Math.PI / 180;
+      return [Math.max(1, Math.min(93, bx + dir * dist * Math.cos(a))), Math.max(1, Math.min(49, 25 + dist * Math.sin(a)))];
+    }
+    if (players && offSide) {
+      var form = [[6, 25], [12, -50], [20, 62], [23, -72], [25, 4]];
+      form.forEach(function (f) {
+        var j1 = (Math.random() - 0.5) * 6, j2 = (Math.random() - 0.5) * 16;
+        var o = pos(offSide, f[0] + j1 * 0.4, f[1] + j2), dfn = pos(offSide, Math.max(1, f[0] + j1 * 0.4 - 3), f[1] + j2 * 0.8);
+        svg += '<circle cx="' + dfn[0] + '" cy="' + dfn[1] + '" r="1.3" fill="' + (offSide === 'h' ? m.away.color : m.home.color) + '" stroke="#222" stroke-width="0.25" opacity="0.9"/>' +
+          '<circle cx="' + o[0] + '" cy="' + o[1] + '" r="1.3" fill="' + (offSide === 'h' ? m.home.color : m.away.color) + '" stroke="#222" stroke-width="0.25"/>';
+      });
+    }
+    shots.forEach(function (s) {
+      var p = pos(s[0], s[1], s[2]), c = s[0] === 'h' ? m.home.color : m.away.color;
+      if (s[3] === 1) svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (players ? 1.4 : 0.9) + '" fill="' + c + '" stroke="#222" stroke-width="0.2"' + (players ? ' class="shot-pop"' : '') + '/>';
+      else if (s[3] === 2) svg += '<path d="M' + (p[0] - 0.8) + ' ' + (p[1] - 0.8) + ' L' + (p[0] + 0.8) + ' ' + (p[1] + 0.8) + ' M' + (p[0] + 0.8) + ' ' + (p[1] - 0.8) + ' L' + (p[0] - 0.8) + ' ' + (p[1] + 0.8) + '" stroke="' + c + '" stroke-width="0.45"/>';
+      else svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (players ? 1.2 : 0.8) + '" fill="none" stroke="' + c + '" stroke-width="0.35"/>';
+      if (players) svg += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="0.7" fill="#f58426" stroke="#000" stroke-width="0.15"/>';
+    });
+    return svg + '</svg>';
   };
   function logLine(l) {
     return '<div class="ll ' + l.type + '"><span class="lt">' + (l.q < 4 ? 'Q' + (l.q + 1) : 'OT') + ' ' + l.t + '</span><span class="lx">' + esc(l.txt) + '</span><span class="ls">' + l.hs + ':' + l.as + '</span></div>';
@@ -158,6 +205,7 @@
       for (var i = 0; i < n && L.idx < m.log.length; i++) {
         var l = m.log[L.idx++];
         if (box) { box.insertAdjacentHTML('beforeend', logLine(l)); }
+        if (l.sh) { var mc = document.getElementById('mini-court'); if (mc) mc.innerHTML = UI.courtSvg(m, [l.sh], l.sh[0], true); }
         var sb = document.getElementById('sb-score'); if (sb) sb.textContent = l.hs + ' : ' + l.as;
       }
       if (box) box.scrollTop = box.scrollHeight;
@@ -188,6 +236,7 @@
         return '<div>' + esc(c.name) + '：<b>' + c.place + '</b>' + (c.prize ? '，奖金 ' + U.money(c.prize) : '') + '　' + c.mids.map(function (id, i) { return UI.link('第' + (i + 1) + '场', 'go', { r: 'match', a: id }); }).join(' ') + '</div>';
       }).join(''));
     }
+    if (r.allstar) h += UI.box('⭐ 全明星周末', '<p>本赛季全明星赛、三分大赛、扣篮大赛已经结束。</p><p>' + UI.btn('查看全明星周末', 'go', { r: 'allstar' }, 'big') + '</p>');
     if (r.seasonSummary) {
       h += UI.box('🏆 第 ' + r.seasonSummary.season + ' 赛季结束', r.seasonSummary.champions.map(function (c) { return '<div>' + esc(c.league) + ' 冠军：<b>' + esc(c.team) + '</b>' + (c.isUser ? ' 🎉' : '') + '</div>'; }).join(''));
     }
@@ -294,7 +343,7 @@
   V.mymatches = function () {
     var S = UI.S, f = UI.curTab('mm', 'all');
     var list = S.myMatches.map(function (id) { return S.matches[id]; }).filter(function (m) { return m && (f === 'all' || m.type === f); });
-    return UI.tabs('mm', [['all', '全部'], ['league', '职业联赛'], ['cup', '街球杯赛'], ['train', '训练赛'], ['friendly', '友谊赛'], ['show', '表演赛'], ['wk', '胜者为王'], ['xcup', 'XBA杯']], f) +
+    return UI.tabs('mm', [['all', '全部'], ['league', '职业联赛'], ['cup', '街球杯赛'], ['train', '训练赛'], ['friendly', '友谊赛'], ['show', '表演赛'], ['wk', '胜者为王'], ['xcup', 'XBA杯'], ['playoff', '季后赛'], ['challenge', '联盟挑战'], ['allstar', '全明星']], f) +
       (list.length ? UI.matchList(S, list) : '<span class="muted">暂无比赛</span>');
   };
 })(window.XBA);

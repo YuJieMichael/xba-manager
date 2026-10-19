@@ -182,3 +182,16 @@ XBA.TRAITS = [
   { id: 'jet', cn: '快攻箭头', icon: '🚀', desc: '快攻能力 +8%', ok: function (p) { return p.a.spd >= 65; }, need: '速度≥65' },
   { id: 'dunker', cn: '扣篮王', icon: '💥', desc: '内线 +3%，更容易打出隔人暴扣', ok: function (p) { return p.a.jmp >= 65 && p.h >= 195; }, need: '弹跳≥65 且 身高≥195' }
 ];
+
+// 球员性格：生成时随机决定，影响训练、伤病、关键时刻和球队化学反应
+XBA.PERSONAS = [
+  { id: 'calm', cn: '平常心', icon: '🙂', w: 40, desc: '没有特别的影响' },
+  { id: 'leader', cn: '领袖', icon: '👑', w: 7, desc: '在场上时队友发挥 +2%；提升球队化学反应' },
+  { id: 'glue', cn: '老好人', icon: '🤝', w: 9, desc: '更衣室润滑剂，提升球队化学反应' },
+  { id: 'hothead', cn: '刺头', icon: '😤', w: 8, desc: '自己发挥 +3%；队里刺头超过一个就会降低化学反应' },
+  { id: 'gymrat', cn: '训练狂', icon: '🏋', w: 8, desc: '训练效果 +20%' },
+  { id: 'lazy', cn: '懒散', icon: '😴', w: 7, desc: '训练效果 -20%，但体力恢复更快' },
+  { id: 'bigheart', cn: '大心脏', icon: '💓', w: 7, desc: '关键时刻（第四节最后 5 分钟、加时分差 5 分内）发挥 +5%' },
+  { id: 'glass', cn: '玻璃人', icon: '🥚', w: 6, desc: '受伤几率 ×1.8' },
+  { id: 'iron', cn: '铁打', icon: '🪨', w: 8, desc: '受伤几率减半' }
+];

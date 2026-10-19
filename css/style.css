@@ -255,3 +255,32 @@ tr.ovr-row td { border-top: 1px dashed var(--line); padding-top: 3px; }
 /* 综合分档颜色 */
 .ovrc.o60 { color: #1f9a2a; font-weight: bold; } .ovrc.o70 { color: #1f63d6; font-weight: bold; } .ovrc.o80 { color: #8a3fc4; font-weight: bold; }
 .ovrc.o90 { color: #e07a00; font-weight: bold; } .ovrc.o100 { color: #d0202e; font-weight: bold; text-shadow: 0 0 4px rgba(255,180,0,.6); }
+/* 助理教练 */
+.coach { background: #eef5ff; border: 1px solid #a9c4ea; border-radius: 5px; padding: 6px 10px; margin-bottom: 8px; }
+.coach-rep { margin-top: 5px; color: #234a7a; background: #fff; border-radius: 4px; padding: 4px 8px; }
+/* 特长 */
+.tr-ic { font-size: 11px; margin-left: 2px; letter-spacing: -1px; cursor: help; }
+.tr-tags { display: flex; flex-wrap: wrap; gap: 3px; margin: 4px 0; }
+.tr-tag { background: #fff4d6; border: 1px solid #e8b04a; border-radius: 10px; padding: 0 6px; font-size: 11px; color: #7a4a00; cursor: help; }
+
+/* 数据中心折线图 */
+.lc-wrap { position: relative; }
+.lc-box { position: relative; }
+svg.lc { width: 100%; height: auto; display: block; background: #fffdf8; border-radius: 4px; touch-action: pan-y; }
+.lc-grid { stroke: #efe3cf; stroke-width: 1; }
+.lc-mark { stroke: #d9b98f; stroke-width: 1; stroke-dasharray: 3 3; }
+.lc-ax { font-size: 11px; fill: #8a7860; }
+.lc-lab { font-size: 11px; fill: #3b2b1d; font-weight: bold; }
+.lc-cross { stroke: #8a7860; stroke-width: 1; }
+.lc-tip { position: absolute; top: 6px; background: #fff; border: 1px solid #d9b98f; border-radius: 4px; padding: 4px 8px; font-size: 12px; pointer-events: none; box-shadow: 0 2px 6px rgba(0,0,0,.15); min-width: 120px; }
+.lc-tip i, .lc-legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+.lc-tt { color: #8a7860; margin-bottom: 2px; }
+.lc-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; margin-bottom: 4px; color: #3b2b1d; }
+.dc-pick { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-bottom: 8px; }
+.dc-chip { border: 1px solid var(--line); border-radius: 12px; padding: 1px 8px; background: #fff; cursor: pointer; font-size: 12px; }
+.dc-chip.on { background: #ffe6b8; border-color: var(--org2); } .dc-chip input { margin: 0 3px 0 0; vertical-align: -2px; }
+/* 成就 */
+.ach { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 6px; }
+.ach-c { border: 1px solid #ddd; border-radius: 6px; padding: 6px 8px; background: #f4f1ec; color: #888; }
+.ach-c.on { background: linear-gradient(#fffbe8, #fff0c8); border-color: #e3b04a; color: var(--ink); }
+.ach-n { font-weight: bold; }

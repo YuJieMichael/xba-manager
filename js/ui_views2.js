@@ -80,7 +80,8 @@
     var board = team.boards[T.board];
     var pr = board.presets[T.preset];
     var tab = UI.curTab('tacpro', 'lineup');
-    var h = '<div class="tac-top">战术板：' + [['league', '联赛战术板'], ['cup', 'XBA杯战术板'], ['other', '表演赛/胜者为王战术板']].map(function (b) {
+    var h = coachBox(S);
+    h += '<div class="tac-top">战术板：' + [['league', '联赛战术板'], ['cup', 'XBA杯战术板'], ['other', '表演赛/胜者为王战术板']].map(function (b) {
       return UI.btn(b[1], 'tacboard', { b: b[0] }, 'sm' + (T.board === b[0] ? ' on' : ''));
     }).join(' ') + '　' + UI.btn('把联赛战术板复制到当前战术板', 'tacboardcopy', {}, 'sm') + '</div>';
     h += UI.tabs('tacpro', [['lineup', '阵容战术'], ['config', '配置阵容战术'], ['level', '战术等级'], ['counter', '战术相克表']], tab);
@@ -135,6 +136,35 @@
     }).join('') + '</table>';
   }
 
+  function coachBox(S) {
+    var c = S.user.coach || {}, rep = S.user.lastCoach, Co = X.Coach;
+    var h = '<div class="coach"><div><b>🧑‍🏫 助理教练</b>　风格 <select data-change="coachstyle">' + Object.keys(Co.STYLES).map(function (k) {
+      return '<option value="' + k + '"' + ((c.style || 'balance') === k ? ' selected' : '') + '>' + Co.STYLES[k].cn + '</option>';
+    }).join('') + '</select> <span class="muted small">' + Co.STYLES[c.style || 'balance'].desc + '</span></div>' +
+      '<div style="margin-top:4px">' + UI.btn('针对下一个联赛对手排阵', 'coachnext', {}, 'sm on') + ' ' + UI.btn('排一套通用阵容', 'coachgen', {}, 'sm') +
+      ' <label class="small"><input type="checkbox" data-change="coachauto"' + (c.auto ? ' checked' : '') + '> 每场比赛前自动针对对手排阵（联赛、XBA杯、表演赛、胜者为王）</label></div>';
+    if (rep) {
+      h += '<div class="coach-rep small">' + (rep.opp ? '对手 <b>' + esc(rep.opp) + '</b>' + (rep.games ? '（看了 ' + rep.games + ' 场录像）' : '') + '常用进攻【' + E.OFF[rep.oppOff].cn + '】、防守【' + E.DEF[rep.oppDef].cn + '】' + (rep.star ? '，头号得分手 ' + esc(rep.star) : '') + '。' : '') +
+        '我方（' + rep.style + '）：进攻用【' + E.OFF[rep.off].cn + '】，防守用【' + E.DEF[rep.def].cn + '】' + (rep.core ? '，进攻核心 ' + esc(rep.core) : '') + (rep.mark >= 0 ? '，主防对方' + E.SLOT_NAMES.pro[rep.mark] : '') + '；第二节轮换，领先 15 分换保守阵容，落后 15 分换追分阵容。</div>';
+    }
+    return h + '</div>';
+  }
+  A.coachstyle = function (d, el) { var S = UI.S; S.user.coach = S.user.coach || {}; S.user.coach.style = el.value; UI.persist(); UI.render(); };
+  A.coachauto = function (d, el) { var S = UI.S; S.user.coach = S.user.coach || {}; S.user.coach.auto = el.checked; UI.result(null, el.checked ? '助理教练会在每场比赛前自动排阵' : '已关闭自动排阵'); };
+  A.coachautost = function (d, el) { var S = UI.S; S.user.coach = S.user.coach || {}; S.user.coach.autoStreet = el.checked; UI.result(null, el.checked ? '街球助理会在每场比赛前自动排阵' : '已关闭'); };
+  A.coachnext = function () {
+    var S = UI.S, opp = X.Coach.nextLeagueOpp(S);
+    var rep = X.Coach.prepare(S, 'league', opp);
+    if (!rep) return UI.toast('可上场球员不足 5 人', true);
+    UI.tac.board = 'league'; UI.tac.preset = 0;
+    UI.result(null, '已针对 ' + (rep.opp || '对手') + ' 排好联赛战术板');
+  };
+  A.coachgen = function () {
+    var S = UI.S, rep = X.Coach.prepare(S, UI.tac.board, null);
+    if (!rep) return UI.toast('可上场球员不足 5 人', true);
+    UI.result(null, '已为当前战术板排好通用阵容');
+  };
+  A.coachst = function () { X.Coach.prepareStreet(UI.S); UI.stac.preset = 0; UI.result(null, '街球阵容已排好'); };
   function curPro() { var t = W().userPro(UI.S); return { team: t, board: t.boards[UI.tac.board], pr: t.boards[UI.tac.board].presets[UI.tac.preset] }; }
   A.tacboard = function (d) { UI.tac.board = d.b; UI.tac.slot = null; UI.render(); };
   A.tacboardcopy = function () {
@@ -187,7 +217,9 @@
     var S = UI.S, team = W().userStreet(S), T = UI.stac;
     var pr = team.presets[T.preset];
     var tab = UI.curTab('tacst', 'lineup');
-    var h = UI.tabs('tacst', [['lineup', '阵容战术'], ['config', '配置阵容战术'], ['level', '战术等级'], ['counter', '战术相克表']], tab);
+    var cs = S.user.coach || {};
+    var h = '<div class="coach"><b>🧑‍🏫 街球助理</b> ' + UI.btn('一键排阵', 'coachst', {}, 'sm on') + ' <label class="small"><input type="checkbox" data-change="coachautost"' + (cs.autoStreet ? ' checked' : '') + '> 每场比赛前自动排阵（按体力轮换）</label></div>';
+    h += UI.tabs('tacst', [['lineup', '阵容战术'], ['config', '配置阵容战术'], ['level', '战术等级'], ['counter', '战术相克表']], tab);
     if (tab === 'lineup') {
       h += '<div class="presets">' + team.presets.map(function (p, i) { return UI.btn((i + 1) + '. ' + esc(p.name), 'stpreset', { i: i }, 'sm' + (T.preset === i ? ' on' : '')); }).join(' ') + '</div>';
       h += '<div class="tac-wrap"><div>' + courtHtml(S, team, pr, 'street', T.slot, 'stslot') + '</div><div class="tac-form">' +

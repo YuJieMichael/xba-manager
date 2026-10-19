@@ -22,6 +22,8 @@
   function rw(r) { return X.rankW(r); }
 
   // ===== 个人能力 =====
+  var CLUTCH = false; // 当前是否关键时刻（第四节/加时，分差 5 分内）
+  function tr(p, id) { return p._tr && p._tr[id]; }
   function condF(p) { return P.staminaF(p._st) * (p._morale || 1); }
 
   function methodAbility(p, m) {
@@ -32,6 +34,15 @@
       case 'drv': v = 0.32 * a.spd + 0.28 * a.dri + 0.15 * a.sht + 0.12 * a.str + 0.13 * a.jmp; break;
       case 'thr': v = 0.85 * a.thr + 0.15 * a.sht; break;
       default: v = 0.45 * a.spd + 0.25 * a.dri + 0.15 * a.pas + 0.15 * a.jmp;
+    }
+    if (p._tr) {
+      if (m.zone === 'thr' && tr(p, 'sniper')) v *= 1.07;
+      if (m.zone === 'mid' && tr(p, 'shooter')) v *= 1.06;
+      if (m.zone === 'in' && tr(p, 'post')) v *= 1.06;
+      if (m.zone === 'in' && tr(p, 'dunker')) v *= 1.03;
+      if (m.zone === 'drv' && tr(p, 'slasher')) v *= 1.06;
+      if (m.zone === 'fb' && tr(p, 'jet')) v *= 1.08;
+      if (CLUTCH && tr(p, 'clutch')) v *= 1.08;
     }
     if (m.kind === 'iso') v *= 0.8 + 0.4 * p.iq.off / 100;
     else if (m.kind === 'fb') v *= 0.9 + 0.2 * p.iq.off / 100;
@@ -46,12 +57,12 @@
       var v = k === 'defIQ' ? p.iq.def : p.a[k];
       s += w * v; ws += w;
     }
-    return s / ws * condF(p);
+    return s / ws * condF(p) * (tr(p, 'lockdown') ? 1.06 : 1);
   }
 
   function rebAbility(p, off) {
     var a = p.a;
-    return (0.4 * a.reb + 0.2 * a.jmp + 0.15 * a.str + 0.25 * P.heightScore(p)) * (0.85 + 0.3 * (off ? p.iq.off : p.iq.def) / 100) * condF(p);
+    return (0.4 * a.reb + 0.2 * a.jmp + 0.15 * a.str + 0.25 * P.heightScore(p)) * (0.85 + 0.3 * (off ? p.iq.off : p.iq.def) / 100) * condF(p) * (tr(p, 'glass') ? 1.08 : 1);
   }
 
   // ===== 球队 / 阵容 =====
@@ -69,6 +80,7 @@
       p._st = cfg.noStamina ? 100 : p.st;
       p._out = false; p._pf = 0; p._sec = 0;
       p._morale = cfg.morale || 1;
+      p._tr = {}; P.traits(p).forEach(function (id) { p._tr[id] = 1; });
       side.box[p.id] = { pid: p.id, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0 };
     });
     return side;
@@ -141,8 +153,8 @@
     }
     sup /= ws;
     var extra;
-    if (m.kind === 'pass') extra = helper ? (0.7 * helper.a.pas + 0.3 * helper.iq.team) * condF(helper) : sup;
-    else if (m.kind === 'pr') extra = helper ? (0.5 * helper.a.str + 0.5 * helper.iq.team) * condF(helper) : sup;
+    if (m.kind === 'pass') extra = helper ? (0.7 * helper.a.pas + 0.3 * helper.iq.team) * condF(helper) * (tr(helper, 'playmaker') ? 1.08 : 1) : sup;
+    else if (m.kind === 'pr') extra = helper ? (0.5 * helper.a.str + 0.5 * helper.iq.team) * condF(helper) * (tr(helper, 'playmaker') ? 1.08 : 1) : sup;
     else if (m.kind === 'fb') extra = U.avg(side.court.map(function (p) { return p.a.spd * condF(p); }));
     else extra = sh.iq.off;
     var pr = preset(side);
@@ -239,7 +251,7 @@
         side.court.forEach(function (p) {
           onIds[p.id] = 1;
           p._sec += sec;
-          if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.0075 + 0.01 * (1 - p.a.sta / 100)) * drainMul * (1 + (intensity - 2) * 0.25));
+          if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.0075 + 0.01 * (1 - p.a.sta / 100)) * (tr(p, 'ironman') ? 0.75 : 1) * drainMul * (1 + (intensity - 2) * 0.25));
           side.used.off[preset(side).off] = (side.used.off[preset(side).off] || 0) + sec;
           side.used.def[preset(side).def] = (side.used.def[preset(side).def] || 0) + sec;
         });
@@ -320,7 +332,7 @@
 
       // 失误 / 抢断
       if (m.id !== 'stl_fb') {
-        var stlD = U.avg(def.court.map(function (p, s) { return (0.6 * p.a.stl + 0.25 * p.a.spd + 0.15 * p.iq.def) * rw(X.DEF_POS_RANK.stl[def.cols[s]]) * condF(p); }));
+        var stlD = U.avg(def.court.map(function (p, s) { return (0.6 * p.a.stl + 0.25 * p.a.spd + 0.15 * p.iq.def) * rw(X.DEF_POS_RANK.stl[def.cols[s]]) * condF(p) * (tr(p, 'thief') ? 1.25 : 1); }));
         var hdl = U.avg(off.court.map(function (p) { return (0.5 * p.a.dri + 0.3 * p.a.pas + 0.2 * p.iq.team) * condF(p); }));
         var pStl = 0.06 * Math.pow(stlD / Math.max(5, hdl * 0.75), 0.8);
         var pTo = 0.055 * Math.pow(Math.max(5, hdl) / 45, -0.5);
@@ -365,7 +377,7 @@
           box(off, U.pick(mates)).ast++;
         }
         var txt;
-        var flashy = (m.zone === 'in' || m.zone === 'drv' || m.zone === 'fb') && Math.random() < 0.04 + Math.max(0, (P.effH(sh) - 215) / 120) + (sh.a.jmp + sh.a.spd) / 2500 + sh.iq.off / 2500;
+        var flashy = (m.zone === 'in' || m.zone === 'drv' || m.zone === 'fb') && Math.random() < 0.04 + Math.max(0, (P.effH(sh) - 215) / 120) + (sh.a.jmp + sh.a.spd) / 2500 + sh.iq.off / 2500 + (tr(sh, 'dunker') ? 0.1 : 0);
         if (flashy && m.kind === 'pass' && helper) txt = fill(U.pick(TXT.alley), who);
         else if (flashy) txt = prefix + fill(U.pick(TXT.dunk), who);
         else txt = prefix + fill(U.pick(TXT[m.zone + '_make']), who);
@@ -381,7 +393,7 @@
         if (m.zone !== 'thr' && m.zone !== 'fb') {
           var bws = def.court.map(function (p, s) { return Math.pow(p.a.blk * rw(X.DEF_POS_RANK.blk[def.cols[s]]) * P.heightScore(p) / 50, 2); });
           var bl = def.court[U.wpick(bws)];
-          var pBlk = U.clamp(0.06 + 0.22 * (bl.a.blk / 100) + (P.effH(bl) - P.effH(sh)) / 200, 0.02, 0.38);
+          var pBlk = U.clamp((0.06 + 0.22 * (bl.a.blk / 100) + (P.effH(bl) - P.effH(sh)) / 200) * (tr(bl, 'blocker') ? 1.4 : 1), 0.02, 0.45);
           if (Math.random() < pBlk) { blocked = true; box(def, bl).blk++; lg(bl.name + ' 一记大帽扇飞了 ' + sh.name + ' 的出手！', 'blk'); }
         }
         if (!blocked) lg(prefix + fill(U.pick(TXT[m.zone + '_miss']), who), '');
@@ -432,6 +444,7 @@
       var lastCheck = clock;
       while (clock > 0) {
         var off = poss, def = poss === H ? A : H;
+        CLUTCH = q >= 3 && Math.abs(H.pts - A.pts) <= 5 && (q >= 4 || clock <= 300);
         var res = possession(off, def, trans);
         if (res === 'forfeit_def') { endByForfeit(def); break; }
         if (!checkInjury(H)) { endByForfeit(H); break; }
@@ -466,7 +479,7 @@
       };
       [H, A].forEach(function (side) { side.roster.forEach(function (p) { res.stam[p.id] = p._st; }); });
       // 清理临时字段
-      [H, A].forEach(function (side) { side.roster.forEach(function (p) { delete p._st; delete p._out; delete p._pf; delete p._sec; delete p._morale; }); });
+      [H, A].forEach(function (side) { side.roster.forEach(function (p) { delete p._st; delete p._out; delete p._pf; delete p._sec; delete p._morale; delete p._tr; }); });
       return res;
     }
   };
@@ -495,14 +508,13 @@
     });
     return lu;
   };
-  // 根据阵容挑选合适的进攻战术
-  E.suggestOff = function (players, lineup, kind) {
+  // 每套进攻战术对这个阵容的适合程度
+  E.offScores = function (players, lineup, kind) {
     var list = kind === 'pro' ? X.OFF_TACTICS.map(function (t) { return t.id; }) : X.STREET_OFF;
-    var cols = kind === 'pro' ? PRO_COLS : STREET_COLS;
+    var cols = kind === 'pro' ? PRO_COLS : STREET_COLS, out = {};
     var court = lineup.map(function (id) { return players.find(function (p) { return p.id === id; }); }).filter(Boolean);
-    if (court.length < cols.length) return list[0];
-    var best = list[0], bs = -1;
     list.forEach(function (tid) {
+      if (court.length < cols.length) { out[tid] = 0; return; }
       var tac = OFF[tid], sc = 0, ws = 0;
       for (var i = 0; i < 12; i++) {
         var w = Math.pow(rw(tac.rank[i]), 2), m = X.METHODS[i], rk = X.METHOD_POS_RANK[m.id];
@@ -514,9 +526,21 @@
         });
         sc += w * best1; ws += w;
       }
-      sc /= ws;
-      if (sc > bs) { bs = sc; best = tid; }
+      out[tid] = sc / ws;
     });
+    return out;
+  };
+  // 根据阵容挑选合适的进攻战术
+  E.suggestOff = function (players, lineup, kind) {
+    var sc = E.offScores(players, lineup, kind), best = null, bs = -1;
+    for (var t in sc) if (sc[t] > bs) { bs = sc[t]; best = t; }
     return best;
+  };
+  // 防守战术对进攻战术的克制程度（>0 防守占优）
+  E.counter = function (offId, defId) {
+    var ot = OFF[offId], dt = DEF[defId], ws = [], tot = 0, s = 0, i;
+    for (i = 0; i < 12; i++) { var w = rw(ot.rank[i]); ws.push(w * w); tot += w * w; }
+    for (i = 0; i < 12; i++) s += ws[i] / tot * (1.15 - 0.03 * (dt.rank[i] - 1));
+    return s - 1;
   };
 })(window.XBA);

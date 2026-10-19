@@ -165,3 +165,20 @@ XBA.GEN_CAP = 112;
 XBA.ATTR_CAP = 150;
 XBA.STAR_MAX = 5;
 XBA.ITEMS.push({ id: 'starcard', cn: '升星卡', price: 50, desc: '职业队球员训满（潜力用尽）后，用升星卡突破潜力上限，星级 +1（最高 5 星）。升到第 N 星需要 N 张' });
+
+// 球员特长：能力达到条件后解锁，比赛中生效
+XBA.TRAITS = [
+  { id: 'sniper', cn: '三分射手', icon: '🎯', desc: '三分出手能力 +7%', ok: function (p) { return p.a.thr >= 55 && p.a.sht >= 45; }, need: '三分≥55 且 投篮≥45' },
+  { id: 'shooter', cn: '神投手', icon: '🏹', desc: '中投能力 +6%', ok: function (p) { return p.a.sht >= 60; }, need: '投篮≥60' },
+  { id: 'post', cn: '内线霸主', icon: '🦍', desc: '内线进攻能力 +6%', ok: function (p) { return p.a.str >= 55 && p.a.reb >= 50 && p.h >= 205; }, need: '强壮≥55、篮板≥50、身高≥205' },
+  { id: 'slasher', cn: '突破手', icon: '⚡', desc: '突破能力 +6%', ok: function (p) { return p.a.spd >= 57 && p.a.dri >= 55; }, need: '速度≥57 且 运球≥55' },
+  { id: 'playmaker', cn: '组织大师', icon: '🧠', desc: '传球/挡拆助攻时进攻 +8%', ok: function (p) { return p.a.pas >= 60 && p.iq.team >= 46; }, need: '传球≥60 且 团队意识≥46' },
+  { id: 'blocker', cn: '盖帽专家', icon: '🖐', desc: '盖帽几率 +40%', ok: function (p) { return p.a.blk >= 55 && p.a.jmp >= 50; }, need: '封盖≥55 且 弹跳≥50' },
+  { id: 'thief', cn: '抢断高手', icon: '🦊', desc: '全队抢断几率提高', ok: function (p) { return p.a.stl >= 55 && p.a.spd >= 50; }, need: '抢断≥55 且 速度≥50' },
+  { id: 'glass', cn: '篮板怪', icon: '🧲', desc: '篮板能力 +8%', ok: function (p) { return p.a.reb >= 60; }, need: '篮板≥60' },
+  { id: 'ironman', cn: '铁人', icon: '🔋', desc: '比赛体力消耗 -25%', ok: function (p) { return p.a.sta >= 65; }, need: '耐力≥65' },
+  { id: 'clutch', cn: '关键先生', icon: '🔥', desc: '第四节最后 5 分钟和加时、分差 5 分内，出手能力 +8%', ok: function (p) { return p.lead >= 50 && p.iq.off >= 46; }, need: '领导≥50 且 进攻意识≥46' },
+  { id: 'lockdown', cn: '防守大闸', icon: '🛡', desc: '防守能力 +6%', ok: function (p) { return p.iq.def >= 46 && (p.a.stl + p.a.blk) / 2 >= 45; }, need: '防守意识≥46 且 抢断封盖均值≥45' },
+  { id: 'jet', cn: '快攻箭头', icon: '🚀', desc: '快攻能力 +8%', ok: function (p) { return p.a.spd >= 65; }, need: '速度≥65' },
+  { id: 'dunker', cn: '扣篮王', icon: '💥', desc: '内线 +3%，更容易打出隔人暴扣', ok: function (p) { return p.a.jmp >= 65 && p.h >= 195; }, need: '弹跳≥65 且 身高≥195' }
+];

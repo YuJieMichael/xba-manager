@@ -57,6 +57,7 @@
   }
 
   function playStreet(S, opp, type, opts) {
+    if (S.user.coach && S.user.coach.autoStreet) X.Coach.prepareStreet(S);
     var st = W().userStreet(S);
     var home = U.chance(0.5);
     var me = streetCfg(S, home), them = Object.assign({}, opp, { home: !home });
@@ -186,6 +187,7 @@
     if (!opp) return { err: '对手不存在' };
     var friendly = type === 'friendly';
     if (W().teamPlayers(S, u).filter(function (p) { return p.inj <= 0; }).length < 5) return { err: '可上场球员不足 5 人' };
+    if (X.Coach.autoOn(S)) X.Coach.prepare(S, 'other', tid);
     var home = U.chance(0.5);
     var me = W().sideCfg(S, u, 'other', { home: home }), them = W().sideCfg(S, opp, 'league', { home: !home });
     var opts = { kind: 'pro', log: true, injuries: !friendly, noStamina: friendly };
@@ -228,6 +230,7 @@
     var wk = S.user.wk;
     if (!wk || wk.over) return { err: '请先报名' };
     var u = W().userPro(S), opp = S.teams[wk.opp];
+    if (X.Coach.autoOn(S)) X.Coach.prepare(S, 'other', opp.id);
     var me = W().sideCfg(S, u, 'other', { home: true, status: 1 }), them = W().sideCfg(S, opp, 'league', { status: 1 });
     var res = E.play(me, them, { kind: 'pro', log: true, injuries: false, noStamina: true });
     var mid = W().saveMatch(S, 'wk', res, u, opp, 'pro', { cup: '胜者为王 第' + (wk.wins + 1) + '场' });

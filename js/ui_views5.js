@@ -60,12 +60,14 @@
   // ===== 荣誉室 =====
   V.trophies = function () {
     var S = UI.S, tab = UI.curTab('troph', 'mine');
-    var h = UI.tabs('troph', [['mine', '我的荣誉'], ['awards', '赛季颁奖'], ['hof', '名人堂'], ['champs', '历届冠军']], tab);
+    var h = UI.tabs('troph', [['mine', '我的荣誉'], ['ach', '成就'], ['awards', '赛季颁奖'], ['hof', '名人堂'], ['champs', '历届冠军']], tab);
     if (tab === 'mine') {
       h += S.user.trophies.length ? '<div class="trophies">' + S.user.trophies.slice().reverse().map(function (t) {
         var icon = /MVP|王|阵容/.test(t.name) ? '🏅' : /升级/.test(t.name) ? '⬆️' : '🏆';
         return '<div class="trophy">' + icon + '<div>' + esc(t.name) + '</div><span class="muted">第 ' + t.season + ' 赛季</span></div>';
       }).join('') + '</div>' : '<span class="muted">还没有奖杯，加油！</span>';
+    } else if (tab === 'ach') {
+      h += V.achievements();
     } else if (tab === 'awards') {
       var seasons = Object.keys(S.awards || {}).map(Number).sort(function (a, b) { return b - a; });
       if (!seasons.length) return h + '<span class="muted">第一个赛季结束后举行颁奖。</span>';

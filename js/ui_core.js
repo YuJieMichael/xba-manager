@@ -7,7 +7,7 @@
   var esc = U.esc;
 
   UI.NAV = [
-    { title: '俱乐部', short: '俱乐部', icon: '🏠', items: [['home', '俱乐部首页'], ['msgs', '系统消息'], ['trophies', '荣誉室']] },
+    { title: '俱乐部', short: '俱乐部', icon: '🏠', items: [['home', '俱乐部首页'], ['msgs', '系统消息'], ['trophies', '荣誉室'], ['datacenter', '数据中心']] },
     { title: '球队管理', icon: '👥', items: [['players', '球员管理'], ['training', '球员训练'], ['staff', '职员管理'], ['arena', '球场建设'], ['finance', '球队财政']] },
     { title: '战术设定', icon: '📋', items: [['tac_pro', '职业战术'], ['tac_street', '街球战术']] },
     { title: '赛程管理', icon: '🏆', items: [['league', '职业联赛'], ['xcup', 'XBA杯'], ['cups', '街球杯赛']] },
@@ -39,7 +39,16 @@
   UI.pname = function (p, opt) {
     if (!p) return '-';
     var cls = 'pn' + (p.green ? ' green' : '') + (p.inj > 0 ? ' injured' : '');
-    return '<a href="javascript:void(0)" class="' + cls + '" data-act="selp" data-pid="' + p.id + '">' + esc(p.name) + '</a>' + UI.starBadge(p) + (p.inj > 0 ? '<span class="tag red" title="' + esc(p.injName) + '">伤' + p.inj + '</span>' : '');
+    return '<a href="javascript:void(0)" class="' + cls + '" data-act="selp" data-pid="' + p.id + '">' + esc(p.name) + '</a>' + UI.starBadge(p) + UI.traitIcons(p) + (p.inj > 0 ? '<span class="tag red" title="' + esc(p.injName) + '">伤' + p.inj + '</span>' : '');
+  };
+  UI.traitIcons = function (p) {
+    if (!p || !p.a) return '';
+    var ts = X.TRAITS.filter(function (t) { return t.ok(p); });
+    return ts.length ? '<span class="tr-ic" title="' + ts.map(function (t) { return t.cn; }).join('、') + '">' + ts.map(function (t) { return t.icon; }).join('') + '</span>' : '';
+  };
+  UI.traitTags = function (p) {
+    var ts = X.TRAITS.filter(function (t) { return t.ok(p); });
+    return ts.length ? '<div class="tr-tags">' + ts.map(function (t) { return '<span class="tr-tag" title="' + t.desc + '">' + t.icon + t.cn + '</span>'; }).join('') + '</div>' : '';
   };
   UI.starBadge = function (p) { return p && p.star ? '<span class="pstar" title="升星 ' + p.star + ' 星">' + p.star + '★</span>' : ''; };
   UI.teamLink = function (t) {
@@ -105,7 +114,7 @@
       '<div>综合 <b class="ovr">' + UI.ovrTag(P.ovr(p)) + '</b></div>' + (p.star ? '<div>升星 <span class="pstar">' + '★'.repeat(p.star) + '</span></div>' : '') + '</div></div>';
     h += '<div class="card-meta">' + (t ? UI.teamLink(t) : '<span class="muted">自由球员</span>') +
       (!street && t ? ' · 合同 ' + p.contract + ' 轮' : '') + (P.potVisible(S, p) || p.seen.pot ? ' · ' + UI.stars(P.stars(p)) : '') + (p.scoutGrade != null && X.Market.GRADES[p.scoutGrade] ? ' <span class="grade" title="球探潜力评价" style="background:' + X.Market.GRADES[p.scoutGrade].c + '">' + X.Market.GRADES[p.scoutGrade].cn + '</span>' : '') +
-      (p.inj > 0 ? '<div class="red">伤病：' + esc(p.injName) + '，还需 ' + p.inj + ' 轮</div>' : '') + '</div>';
+      UI.traitTags(p) + (p.inj > 0 ? '<div class="red">伤病：' + esc(p.injName) + '，还需 ' + p.inj + ' 轮</div>' : '') + '</div>';
     h += '<div class="minitabs">' + [['ab', '能力'], ['st', '统计'], ['hi', '履历']].map(function (x) {
       return '<span class="' + (tab === x[0] ? 'on' : '') + '" data-act="tab" data-key="card" data-val="' + x[0] + '">' + x[1] + '</span>';
     }).join('|') + '</div>';

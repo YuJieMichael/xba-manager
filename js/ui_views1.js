@@ -101,6 +101,7 @@
       }
     } else next = '<div class="next">今天是' + (S.day === 13 ? '赛季中休息日，「极限球员」市场开放' : '赛季末休息日') + '，没有联赛。</div>';
     h += UI.box('今日赛程', next + '<div class="muted small">点击右上角「进入下一天」进行今天的比赛（职业联赛 9:00 开赛，会员可观看现场文字直播）。</div>');
+    h += UI.goalsBox ? UI.goalsBox(S) : '';
     // 待办
     var todo = [];
     var stp = W().teamPlayers(S, W().userStreet(S));

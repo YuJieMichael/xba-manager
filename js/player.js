@@ -116,6 +116,11 @@
     return p;
   };
 
+  P.traits = function (p) {
+    return X.TRAITS.filter(function (t) { return t.ok(p); }).map(function (t) { return t.id; });
+  };
+  P.hasTrait = function (p, id) { return X.TRAITS.some(function (t) { return t.id === id && t.ok(p); }); };
+
   P.emptyStats = function () {
     return { gp: 0, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0 };
   };

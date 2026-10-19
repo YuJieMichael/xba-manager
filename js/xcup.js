@@ -73,6 +73,7 @@
   function play(S, hid, aid, label, out) {
     var h = S.teams[hid], a = S.teams[aid];
     var isUser = h.isUser || a.isUser;
+    if (isUser && X.Coach.autoOn(S)) X.Coach.prepare(S, 'cup', h.isUser ? a.id : h.id);
     var res = E.play(W().sideCfg(S, h, 'cup', { home: true }), W().sideCfg(S, a, 'cup'), { kind: 'pro', log: isUser, injuries: false, noStamina: true });
     var r = { h: hid, a: aid, hs: res.hs, as: res.as };
     if (isUser) {

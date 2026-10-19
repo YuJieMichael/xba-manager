@@ -243,6 +243,7 @@
     st.presets = stt.presets; st.config = stt.config;
     S.user.onboarded = true;
     X.XCup.setup(S, true);
+    X.Goals.newSeason(S);
     X.Cups.daily(S);
     var lg = W.league(S, pro.leagueId);
     S.usedNames[pro.name] = 1;
@@ -436,6 +437,7 @@
         var p = S.players[id];
         if (p.inj > 0 && p.teamId && S.teams[p.teamId] && S.teams[p.teamId].kind === 'pro') { p.inj -= 1; if (p.inj === 0 && S.teams[p.teamId].isUser) W.msg(S, p.name + ' 伤愈复出', 'inj'); }
       });
+      if (X.Coach.autoOn(S)) { var oppId = X.Coach.nextLeagueOpp(S); if (oppId) X.Coach.prepare(S, 'league', oppId); }
       S.leagues.forEach(function (lg) { playLeagueRound(S, lg, round, out); });
       userRoundFinance(S);
       // 合同、生日
@@ -481,6 +483,19 @@
       p.mood = Math.min(100, p.mood + 25);
       if (p.inj > 0) { p.inj -= 1; if (p.inj === 0) W.msg(S, p.name + '（街球）伤愈', 'inj'); }
     });
+    // 特长解锁提示
+    [pro, street].forEach(function (t) {
+      W.teamPlayers(S, t).forEach(function (p) {
+        var now = P.traits(p);
+        if (!p.trSeen) { p.trSeen = now; return; }
+        now.forEach(function (id) {
+          if (p.trSeen.indexOf(id) >= 0) return;
+          var tr = X.TRAITS.find(function (x) { return x.id === id; });
+          W.msg(S, '✨ ' + p.name + ' 解锁特长【' + tr.icon + tr.cn + '】：' + tr.desc, 'player');
+        });
+        p.trSeen = now;
+      });
+    });
     // AI 球队成长与体力
     Object.keys(S.teams).forEach(function (tid) {
       var t = S.teams[tid];
@@ -512,6 +527,9 @@
     X.Market.daily(S);
     X.Cups.daily(S);
     if (S.dayNo % 3 === 0) W.genAdOffers(S);
+    X.Goals.snapshot(S);
+    X.Goals.checkGoals(S, false);
+    X.Goals.checkAch(S);
     X.Cups.doubleDaily(S);
     return out;
   };
@@ -544,6 +562,10 @@
       var net = L.inc - L.exp;
       if (net > 0) { var tax = Math.round(net * (S.user.member ? 0.25 : 0.3)); W.spend(S, tax, '赛季所得税'); W.msg(S, '本赛季净利润 ' + U.money(net) + '，缴纳所得税 ' + U.money(tax), 'fin'); }
     }
+
+    // 赛季目标判定、赛季总结（在升降级之前）
+    X.Goals.checkGoals(S, true);
+    X.Goals.seasonRecord(S);
 
     // XBA杯邀请函（按本赛季成绩）
     X.XCup.invites(S);
@@ -619,6 +641,7 @@
     S.season += 1;
     S.leagues.forEach(function (lg) { lg.schedule = W.genSchedule(lg.teamIds); lg.results = []; });
     X.XCup.setup(S);
+    X.Goals.newSeason(S);
     var ul = W.league(S, user.leagueId);
     W.msg(S, '第 ' + S.season + ' 赛季开始！你的球队参加 ' + ul.name, 'sys');
     out.seasonSummary = summary;

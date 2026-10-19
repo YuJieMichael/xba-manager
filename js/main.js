@@ -13,6 +13,7 @@
       var pro = S.teams[S.user.proId];
       if (pro && !pro.boards.cup) pro.boards.cup = JSON.parse(JSON.stringify(pro.boards.league));
       if (!S.xcup && S.day <= 1) X.XCup.setup(S, true);
+      if (!S.user.goals || S.user.goals.season !== S.season) X.Goals.newSeason(S);
     }
   }
   function boot() {

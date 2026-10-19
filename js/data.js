@@ -166,22 +166,38 @@ XBA.ATTR_CAP = 150;
 XBA.STAR_MAX = 5;
 XBA.ITEMS.push({ id: 'starcard', cn: '升星卡', price: 50, desc: '职业队球员训满（潜力用尽）后，用升星卡突破潜力上限，星级 +1（最高 5 星）。升到第 N 星需要 N 张' });
 
-// 球员特长：能力达到条件后解锁，比赛中生效
-XBA.TRAITS = [
-  { id: 'sniper', cn: '三分射手', icon: '🎯', desc: '三分出手能力 +7%', ok: function (p) { return p.a.thr >= 55 && p.a.sht >= 45; }, need: '三分≥55 且 投篮≥45' },
-  { id: 'shooter', cn: '神投手', icon: '🏹', desc: '中投能力 +6%', ok: function (p) { return p.a.sht >= 60; }, need: '投篮≥60' },
-  { id: 'post', cn: '内线霸主', icon: '🦍', desc: '内线进攻能力 +6%', ok: function (p) { return p.a.str >= 55 && p.a.reb >= 50 && p.h >= 205; }, need: '强壮≥55、篮板≥50、身高≥205' },
-  { id: 'slasher', cn: '突破手', icon: '⚡', desc: '突破能力 +6%', ok: function (p) { return p.a.spd >= 57 && p.a.dri >= 55; }, need: '速度≥57 且 运球≥55' },
-  { id: 'playmaker', cn: '组织大师', icon: '🧠', desc: '传球/挡拆助攻时进攻 +8%', ok: function (p) { return p.a.pas >= 60 && p.iq.team >= 46; }, need: '传球≥60 且 团队意识≥46' },
-  { id: 'blocker', cn: '盖帽专家', icon: '🖐', desc: '盖帽几率 +40%', ok: function (p) { return p.a.blk >= 55 && p.a.jmp >= 50; }, need: '封盖≥55 且 弹跳≥50' },
-  { id: 'thief', cn: '抢断高手', icon: '🦊', desc: '全队抢断几率提高', ok: function (p) { return p.a.stl >= 55 && p.a.spd >= 50; }, need: '抢断≥55 且 速度≥50' },
-  { id: 'glass', cn: '篮板怪', icon: '🧲', desc: '篮板能力 +8%', ok: function (p) { return p.a.reb >= 60; }, need: '篮板≥60' },
-  { id: 'ironman', cn: '铁人', icon: '🔋', desc: '比赛体力消耗 -25%', ok: function (p) { return p.a.sta >= 65; }, need: '耐力≥65' },
-  { id: 'clutch', cn: '关键先生', icon: '🔥', desc: '第四节最后 5 分钟和加时、分差 5 分内，出手能力 +8%', ok: function (p) { return p.lead >= 50 && p.iq.off >= 46; }, need: '领导≥50 且 进攻意识≥46' },
-  { id: 'lockdown', cn: '防守大闸', icon: '🛡', desc: '防守能力 +6%', ok: function (p) { return p.iq.def >= 46 && (p.a.stl + p.a.blk) / 2 >= 45; }, need: '防守意识≥46 且 抢断封盖均值≥45' },
-  { id: 'jet', cn: '快攻箭头', icon: '🚀', desc: '快攻能力 +8%', ok: function (p) { return p.a.spd >= 65; }, need: '速度≥65' },
-  { id: 'dunker', cn: '扣篮王', icon: '💥', desc: '内线 +3%，更容易打出隔人暴扣', ok: function (p) { return p.a.jmp >= 65 && p.h >= 195; }, need: '弹跳≥65 且 身高≥195' }
-];
+// 球员特长：能力达标解锁，超出门槛越多等级越高（铜 → 银 → 金 → 名人堂），比赛中生效
+// req：[取值函数, 门槛, 名称]；fix：额外的硬条件；eff：基础效果（铜 50%、银 100%、金 150%、名人堂 220%）
+XBA.TRAIT_TIERS = [{ cn: '', f: 0 }, { cn: '铜', f: 0.5, c: '#b07a3a' }, { cn: '银', f: 1, c: '#8a95a5' }, { cn: '金', f: 1.5, c: '#d6a400' }, { cn: '名人堂', f: 2.2, c: '#8a3fc4' }];
+(function () {
+  var A = function (k) { return function (p) { return p.a[k]; }; };
+  var IQ = function (k) { return function (p) { return p.iq[k]; }; };
+  XBA.TRAITS = [
+    { id: 'sniper', cn: '三分射手', icon: '🎯', eff: 0.07, what: '三分出手能力', req: [[A('thr'), 55, '三分'], [A('sht'), 45, '投篮']] },
+    { id: 'shooter', cn: '神投手', icon: '🏹', eff: 0.06, what: '中投能力', req: [[A('sht'), 60, '投篮']] },
+    { id: 'post', cn: '内线霸主', icon: '🦍', eff: 0.06, what: '内线进攻能力', req: [[A('str'), 55, '强壮'], [A('reb'), 50, '篮板']], fix: function (p) { return p.h >= 205; }, fixCn: '身高≥205' },
+    { id: 'slasher', cn: '突破手', icon: '⚡', eff: 0.06, what: '突破能力', req: [[A('spd'), 57, '速度'], [A('dri'), 55, '运球']] },
+    { id: 'playmaker', cn: '组织大师', icon: '🧠', eff: 0.08, what: '传球/挡拆助攻时进攻', req: [[A('pas'), 60, '传球'], [IQ('team'), 46, '团队意识']] },
+    { id: 'blocker', cn: '盖帽专家', icon: '🖐', eff: 0.4, what: '盖帽几率', req: [[A('blk'), 55, '封盖'], [A('jmp'), 50, '弹跳']] },
+    { id: 'thief', cn: '抢断高手', icon: '🦊', eff: 0.25, what: '抢断几率', req: [[A('stl'), 55, '抢断'], [A('spd'), 50, '速度']] },
+    { id: 'glass', cn: '篮板怪', icon: '🧲', eff: 0.08, what: '篮板能力', req: [[A('reb'), 60, '篮板']] },
+    { id: 'ironman', cn: '铁人', icon: '🔋', eff: 0.25, what: '比赛体力消耗减少', req: [[A('sta'), 65, '耐力']] },
+    { id: 'clutch', cn: '关键先生', icon: '🔥', eff: 0.08, what: '关键时刻出手能力', req: [[function (p) { return p.lead; }, 50, '领导'], [IQ('off'), 46, '进攻意识']] },
+    { id: 'lockdown', cn: '防守大闸', icon: '🛡', eff: 0.06, what: '防守能力', req: [[IQ('def'), 46, '防守意识'], [function (p) { return (p.a.stl + p.a.blk) / 2; }, 45, '抢断封盖均值']] },
+    { id: 'jet', cn: '快攻箭头', icon: '🚀', eff: 0.08, what: '快攻能力', req: [[A('spd'), 65, '速度']] },
+    { id: 'dunker', cn: '扣篮王', icon: '💥', eff: 0.03, what: '内线进攻（并更容易打出隔人暴扣）', req: [[A('jmp'), 65, '弹跳']], fix: function (p) { return p.h >= 195; }, fixCn: '身高≥195' }
+  ];
+  XBA.TRAITS.forEach(function (t) {
+    t.lv = function (p) {
+      if (t.fix && !t.fix(p)) return 0;
+      var margin = Math.min.apply(null, t.req.map(function (r) { return r[0](p) - r[1]; }));
+      return margin < 0 ? 0 : margin < 10 ? 1 : margin < 20 ? 2 : margin < 30 ? 3 : 4;
+    };
+    t.ok = function (p) { return t.lv(p) > 0; };
+    t.need = t.req.map(function (r) { return r[2] + '≥' + r[1]; }).join('、') + (t.fixCn ? '、' + t.fixCn : '') + '（每高出 10 点升一级）';
+    t.desc = t.what + ' +' + Math.round(t.eff * 50 * 10) / 10 + '%（铜）/ +' + Math.round(t.eff * 100) + '%（银）/ +' + Math.round(t.eff * 150 * 10) / 10 + '%（金）/ +' + Math.round(t.eff * 220) + '%（名人堂）';
+  });
+})();
 
 // 球员性格：生成时随机决定，影响训练、伤病、关键时刻和球队化学反应
 XBA.PERSONAS = [

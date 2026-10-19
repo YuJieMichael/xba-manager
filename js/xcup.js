@@ -78,10 +78,11 @@
     var r = { h: hid, a: aid, hs: res.hs, as: res.as };
     if (isUser) {
       W().applyMatch(S, res, { noStamina: true });
-      W().addProf(h.isUser ? h : a, h.isUser ? res.used.h : res.used.a);
+      W().addProf(h.isUser ? h : a, h.isUser ? res.used.h : res.used.a, S);
       r.mid = W().saveMatch(S, 'xcup', res, h, a, 'pro', { cup: 'XBA杯 ' + label, proTP: W().earnProTP(S, res, h.isUser) });
       out.xcupGames = (out.xcupGames || []).concat([{ mid: r.mid, label: label }]);
       X.Rivals.afterGame(S, h.isUser ? a.id : h.id, h.isUser ? res.hs - res.as : res.as - res.hs, 'cup');
+      X.Manager.xp(S, (h.isUser ? res.hs > res.as : res.as > res.hs) ? 8 : 3);
     }
     return r;
   }

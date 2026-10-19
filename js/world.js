@@ -1,6 +1,7 @@
 // 世界：联赛金字塔、赛程、AI 球队、每日推进、赛季更替、财政
 (function (X) {
   var U = X.U, P = X.P, E = X.Engine, W = {};
+  function UIS() { return X.UI && X.UI.S; }
   X.World = W;
 
   var FANS_BASE = { 1: 35000, 2: 15000, 3: 7000, 4: 3000 };
@@ -270,7 +271,7 @@
     if (team.kind === 'pro') {
       var b = (team.boards[board] || team.boards.league);
       cfg.presets = b.presets; cfg.config = b.config;
-      cfg.status = W.lineupStatus(S, team);
+      cfg.status = W.lineupStatus(S, team) * (team.isUser ? 1 + 0.01 * X.Manager.lv(S, 'locker') : 1);
       cfg.morale = team.morale || 1;
     } else {
       cfg.presets = team.presets; cfg.config = team.config; cfg.status = 1;
@@ -282,11 +283,13 @@
   // 比赛结果应用到球员（体力、伤病、统计、意识）
   W.applyMatch = function (S, res, opts) {
     opts = opts || {};
+    if (res.hl && res.hl.length) S._hlDay = (S._hlDay || []).concat(res.hl);
     for (var pid in res.stam) { var p = S.players[pid]; if (p && !opts.noStamina) p.st = Math.round(res.stam[pid]); }
     res.injuries.forEach(function (inj) {
       var p = S.players[inj.pid]; if (!p) return;
-      p.inj = Math.max(p.inj, inj.rounds); p.injName = inj.name;
       var t = p.teamId && S.teams[p.teamId];
+      if (t && t.isUser) inj.rounds = Math.max(1, Math.round(inj.rounds * X.Manager.injMul(S)));
+      p.inj = Math.max(p.inj, inj.rounds); p.injName = inj.name;
       if (t && t.isUser) W.msg(S, p.name + ' 在比赛中受伤（' + inj.name + '），预计伤停 ' + inj.rounds + ' 轮', 'inj');
     });
     res.box.h.concat(res.box.a).forEach(function (b) {
@@ -301,14 +304,16 @@
   W.earnProTP = function (S, res, userIsHome) {
     var box = userIsHome ? res.box.h : res.box.a, tot = 0;
     box.forEach(function (b) { if (b.min > 0) tot += Math.round(b.min / 6 + Math.max(0, b.eff) * 0.3); });
+    tot = Math.round(tot * X.Manager.tpMul(S));
     S.user.proTP = (S.user.proTP || 0) + tot;
     return tot;
   };
 
   // 战术熟练度
-  W.addProf = function (team, used) {
+  W.addProf = function (team, used, S) {
+    var mul = team.isUser && (S || UIS()) ? 1 + 0.25 * X.Manager.lv(S || UIS(), 'tactic') : 1;
     ['off', 'def'].forEach(function (w) {
-      for (var id in used[w]) team.prof[w][id] = (team.prof[w][id] || 0) + used[w][id] / 600;
+      for (var id in used[w]) team.prof[w][id] = (team.prof[w][id] || 0) + used[w][id] / 600 * mul;
     });
   };
 
@@ -343,9 +348,9 @@
     games.forEach(function (g) {
       var h = S.teams[g[0]], a = S.teams[g[1]];
       var isUser = h.isUser || a.isUser;
-      var res = E.play(W.sideCfg(S, h, 'league', { home: true }), W.sideCfg(S, a, 'league'), { kind: 'pro', log: isUser, injuries: true });
+      var res = W.preResult(S, h, a) || E.play(W.sideCfg(S, h, 'league', { home: true }), W.sideCfg(S, a, 'league'), { kind: 'pro', log: isUser, injuries: true });
       W.applyMatch(S, res, { stats: true, support: true });
-      W.addProf(h, res.used.h); W.addProf(a, res.used.a);
+      W.addProf(h, res.used.h, S); W.addProf(a, res.used.a, S);
       h.rec.pf += res.hs; h.rec.pa += res.as; a.rec.pf += res.as; a.rec.pa += res.hs;
       if (res.hs > res.as) { h.rec.w++; a.rec.l++; } else { a.rec.w++; h.rec.l++; }
       var top = function (o) { var b = null, bv = -1; for (var k in o) if (o[k] > bv) { bv = o[k]; b = k; } return b; };
@@ -356,6 +361,7 @@
         out.userGame = r.mid;
         userGameFinance(S, h.isUser ? h : a, h.isUser, res, h.isUser ? a.id : h.id);
         X.Rivals.afterGame(S, h.isUser ? a.id : h.id, h.isUser ? res.hs - res.as : res.as - res.hs, 'league');
+        X.Manager.xp(S, (h.isUser ? res.hs > res.as : res.as > res.hs) ? 12 : 4);
       }
       // AI 球迷变化
       [h, a].forEach(function (t) {
@@ -379,11 +385,11 @@
   W.userGameFinance = function (S, team, home, res, oppId) { return userGameFinance(S, team, home, res, oppId); };
   function userGameFinance(S, team, home, res, oppId) {
     var my = home ? res.hs : res.as, op = home ? res.as : res.hs, won = my > op, margin = my - op;
-    var rival = oppId && X.Rivals.isRival(S, oppId), rm = rival ? 1.5 : 1;
+    var rival = oppId && X.Rivals.isRival(S, oppId), rm = rival ? 1.5 : 1, hm = 1 + 0.05 * X.Manager.lv(S, 'home');
     if (home && !(res.forfeit && res.forfeit.pre)) {
       var att = W.attendance(S, team);
       team.lastAtt = att;
-      W.earn(S, att * team.ticket * rm, '主场门票（' + att + '人）' + (rival ? '·宿敌对决' : ''));
+      W.earn(S, att * team.ticket * rm * hm, '主场门票（' + att + '人）' + (rival ? '·宿敌对决' : ''));
       var jersey = U.sum(W.teamPlayers(S, team).map(function (p) { return p.support / 100; })) * team.fans * (won ? 1.4 : 1.0);
       W.earn(S, jersey * rm, '球衣销售' + (rival ? '·宿敌对决' : ''));
     }
@@ -424,13 +430,38 @@
     for (var i = 0; i < 6; i++) {
       var b = U.pick(BRANDS); if (used[b]) continue; used[b] = 1;
       var rounds = U.pick([5, 10, 13, 20, 26]);
-      var per = Math.round(team.fans / 1000 * 900 * U.rf(0.6, 1.4) + 1500);
+      var per = Math.round((team.fans / 1000 * 900 * U.rf(0.6, 1.4) + 1500) * (1 + 0.1 * X.Manager.lv(S, 'biz')));
       S.adOffers.push({ id: U.uid(S, 'ad'), brand: b, rounds: rounds, total: per * rounds });
     }
   };
 
   // ===== 每日推进 =====
-  W.advance = function (S) {
+  // 亲自执教：今天你的比赛（联赛或季后赛）
+  W.userGameToday = function (S) {
+    var pro = W.userPro(S), round = W.roundOfDay(S.day);
+    if (round) {
+      var lg = W.league(S, pro.leagueId), g = (lg.schedule[round - 1] || []).find(function (x) { return x[0] === pro.id || x[1] === pro.id; });
+      return g ? { kind: 'league', h: g[0], a: g[1], label: lg.name + ' 第' + round + '轮' } : null;
+    }
+    if (X.Playoffs.isDay(S.day)) {
+      X.Playoffs.prepareDay(S);
+      var L = S.playoffs.leagues[pro.leagueId], st = X.Playoffs.stageOf(S.day), gn = X.Playoffs.gameOf(S.day);
+      var s = L && L.rounds[st] && L.rounds[st].find(function (x) { return (x.a === pro.id || x.b === pro.id) && !x.w; });
+      if (!s) return null;
+      var home = gn === 2 ? s.b : s.a;
+      return { kind: 'playoff', h: home, a: home === s.a ? s.b : s.a, label: X.Playoffs.label(S.day) };
+    }
+    return null;
+  };
+  // 已经亲自打完的比赛结果
+  W.preResult = function (S, h, a) {
+    var p = S._pre;
+    if (p && p.h === h.id && p.a === a.id) { S._pre = null; return p.res; }
+    return null;
+  };
+
+  W.advance = function (S, pre) {
+    S._pre = pre || null;
     var out = { msgs: [], userGame: null, cupResults: [] };
     var round = W.roundOfDay(S.day);
     var pro = W.userPro(S), street = W.userStreet(S);
@@ -502,15 +533,16 @@
       p.mood = Math.min(100, p.mood + 25);
       if (p.inj > 0) { p.inj -= 1; if (p.inj === 0) W.msg(S, p.name + '（街球）伤愈', 'inj'); }
     });
-    // 特长解锁提示
+    // 特长解锁/升级提示
     [pro, street].forEach(function (t) {
       W.teamPlayers(S, t).forEach(function (p) {
-        var now = P.traits(p);
-        if (!p.trSeen) { p.trSeen = now; return; }
-        now.forEach(function (id) {
-          if (p.trSeen.indexOf(id) >= 0) return;
-          var tr = X.TRAITS.find(function (x) { return x.id === id; });
-          W.msg(S, '✨ ' + p.name + ' 解锁特长【' + tr.icon + tr.cn + '】：' + tr.desc, 'player');
+        var now = {};
+        X.TRAITS.forEach(function (tr) { var lv = tr.lv(p); if (lv) now[tr.id] = lv; });
+        var seen = p.trSeen;
+        if (!seen || Array.isArray(seen)) { p.trSeen = now; return; }
+        X.TRAITS.forEach(function (tr) {
+          var a = seen[tr.id] || 0, b = now[tr.id] || 0;
+          if (b > a) W.msg(S, '✨ ' + p.name + (a ? ' 的特长【' + tr.icon + tr.cn + '】升级为 ' : ' 解锁特长【' + tr.icon + tr.cn + '】') + X.TRAIT_TIERS[b].cn + (a ? '' : '级'), 'player');
         });
         p.trSeen = now;
       });
@@ -547,10 +579,23 @@
     X.Cups.daily(S);
     if (S.dayNo % 3 === 0) W.genAdOffers(S);
     X.Alliance.daily(S);
+    X.Trade.daily(S);
+    if (S.day === X.Trade.DEADLINE) W.msg(S, '⏰ 交易截止日已过，本赛季不能再和其他球队交易球员', 'market');
+    // 今日五佳球
+    if (S._hlDay && S._hlDay.length) {
+      // 同类镜头最多 2 个，保证五佳球有绝杀、扣篮、盖帽等不同类型
+      var all = S._hlDay.map(function (h) { return [h[0] + Math.random(), h[1]]; }).sort(function (a, b) { return b[0] - a[0]; });
+      var cat = function (t) { return /绝杀/.test(t) ? 'c' : /大帽/.test(t) ? 'b' : /扣|灌篮/.test(t) ? 'd' : 'o'; }, cnt = {}, top = [];
+      all.forEach(function (h) { var c = cat(h[1]); if (top.length < 5 && (cnt[c] || 0) < 2) { cnt[c] = (cnt[c] || 0) + 1; top.push(h); } });
+      S.highlights = { season: S.season, label: out.label || '', list: top.map(function (h) { return h[1]; }) };
+      out.highlights = S.highlights.list;
+    }
+    S._hlDay = null;
     X.Goals.snapshot(S);
     X.Goals.checkGoals(S, false);
     X.Goals.checkAch(S);
     X.Cups.doubleDaily(S);
+    S._pre = null;
     return out;
   };
 
@@ -585,6 +630,7 @@
     if (xc && xc.ko.champ && xc.ko.champ.champion && S.teams[xc.ko.champ.champion]) summary.xcup = S.teams[xc.ko.champ.champion].name;
     S.history.unshift(summary);
     X.Rivals.seasonDecay(S);
+    X.Manager.xp(S, 60);
 
     // 所得税
     var L = S.user.ledger[S.season];
@@ -718,7 +764,7 @@
   // ===== 用户操作 =====
   W.renewContract = function (S, p, rounds) {
     if (p.contract >= 10) return '合同少于 10 轮时才能续约';
-    var sal = Math.round(P.salaryFor(p) * (rounds >= 52 ? 1.05 : 1));
+    var sal = Math.round(P.salaryFor(p) * (rounds >= 52 ? 1.05 : 1) * X.Manager.salaryMul(S));
     p.salary = sal; p.contract += rounds;
     W.msg(S, p.name + ' 续约 ' + rounds + ' 轮，新工资 ' + U.money(sal) + '/轮', 'player');
     return null;

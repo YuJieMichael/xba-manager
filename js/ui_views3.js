@@ -91,16 +91,16 @@
 
   // ===== 技术统计表 =====
   function boxTable(lines, getP, perGame) {
-    var h = '<table class="grid box"><tr><th>球员</th>' + (perGame ? '<th>场</th>' : '') + '<th>时间</th><th>得分</th><th>投篮</th><th>三分</th><th>罚球</th><th>前板</th><th>后板</th><th>助攻</th><th>抢断</th><th>盖帽</th><th>失误</th><th>犯规</th><th>效率</th></tr>';
+    var h = '<table class="grid box"><tr><th>球员</th>' + (perGame ? '<th>场</th>' : '') + '<th>时间</th><th>得分</th><th>投篮</th><th>三分</th><th>罚球</th><th>前板</th><th>后板</th><th>助攻</th><th>抢断</th><th>盖帽</th><th>失误</th><th>犯规</th><th>效率</th>' + (perGame ? '' : '<th>评分</th>') + '</tr>';
     var tot = { min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0 };
     lines.slice().sort(function (a, b) { return b.min - a.min; }).forEach(function (b) {
       var p = getP(b.pid);
       var g = perGame ? (b.gp || 1) : 1;
       var f = function (v) { return perGame ? U.r1(v / g) : v; };
       for (var k in tot) tot[k] += b[k] || 0;
-      h += '<tr' + (b.min ? '' : ' class="muted"') + '><td>' + (p ? (p.id ? UI.pname(p) : esc(p.name)) : '?') + (p && p.pos ? ' <span class="muted small">' + p.pos + '</span>' : '') + '</td>' + (perGame ? '<td>' + b.gp + '</td>' : '') + '<td>' + f(b.min) + '</td><td><b>' + f(b.pts) + '</b></td><td>' + f(b.fgm) + '-' + f(b.fga) + '</td><td>' + f(b.tpm) + '-' + f(b.tpa) + '</td><td>' + f(b.ftm) + '-' + f(b.fta) + '</td><td>' + f(b.oreb) + '</td><td>' + f(b.dreb) + '</td><td>' + f(b.ast) + '</td><td>' + f(b.stl) + '</td><td>' + f(b.blk) + '</td><td>' + f(b.to) + '</td><td>' + f(b.pf) + '</td><td>' + f(b.eff || 0) + '</td></tr>';
+      h += '<tr' + (b.min ? '' : ' class="muted"') + '><td>' + (p ? (p.id ? UI.pname(p) : esc(p.name)) : '?') + (p && p.pos ? ' <span class="muted small">' + p.pos + '</span>' : '') + '</td>' + (perGame ? '<td>' + b.gp + '</td>' : '') + '<td>' + f(b.min) + '</td><td><b>' + f(b.pts) + '</b></td><td>' + f(b.fgm) + '-' + f(b.fga) + '</td><td>' + f(b.tpm) + '-' + f(b.tpa) + '</td><td>' + f(b.ftm) + '-' + f(b.fta) + '</td><td>' + f(b.oreb) + '</td><td>' + f(b.dreb) + '</td><td>' + f(b.ast) + '</td><td>' + f(b.stl) + '</td><td>' + f(b.blk) + '</td><td>' + f(b.to) + '</td><td>' + f(b.pf) + '</td><td>' + f(b.eff || 0) + '</td>' + (perGame ? '' : '<td data-sort="' + UI.gradeScore(b) + '">' + UI.grade(b) + '</td>') + '</tr>';
     });
-    if (!perGame) h += '<tr class="tot"><td>合计</td><td></td><td>' + tot.pts + '</td><td>' + tot.fgm + '-' + tot.fga + '（' + (tot.fga ? Math.round(tot.fgm / tot.fga * 100) : 0) + '%）</td><td>' + tot.tpm + '-' + tot.tpa + '</td><td>' + tot.ftm + '-' + tot.fta + '</td><td>' + tot.oreb + '</td><td>' + tot.dreb + '</td><td>' + tot.ast + '</td><td>' + tot.stl + '</td><td>' + tot.blk + '</td><td>' + tot.to + '</td><td>' + tot.pf + '</td><td></td></tr>';
+    if (!perGame) h += '<tr class="tot"><td>合计</td><td></td><td>' + tot.pts + '</td><td>' + tot.fgm + '-' + tot.fga + '（' + (tot.fga ? Math.round(tot.fgm / tot.fga * 100) : 0) + '%）</td><td>' + tot.tpm + '-' + tot.tpa + '</td><td>' + tot.ftm + '-' + tot.fta + '</td><td>' + tot.oreb + '</td><td>' + tot.dreb + '</td><td>' + tot.ast + '</td><td>' + tot.stl + '</td><td>' + tot.blk + '</td><td>' + tot.to + '</td><td>' + tot.pf + '</td><td></td><td></td></tr>';
     return h + '</table>';
   }
   UI.boxTable = boxTable;

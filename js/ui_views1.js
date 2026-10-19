@@ -101,8 +101,12 @@
       }
     } else if (X.Playoffs.isDay(S.day)) next = UI.playoffToday(S);
     else next = '<div class="next">今天是' + (S.day === 13 ? '赛季中休息日：「极限球员」市场开放，并将举行<b>全明星周末</b>（全明星赛、三分大赛、扣篮大赛）' : '赛季末休息日') + '，没有联赛。</div>';
+    if (W().roundOfDay(S.day) || X.Playoffs.isDay(S.day)) next += '<div>' + UI.coachToggle(S) + '</div>';
     h += UI.box('今日赛程', next + '<div class="muted small">点击右上角「进入下一天」进行今天的比赛（职业联赛 9:00 开赛，会员可观看现场文字直播）。</div>');
     h += UI.goalsBox ? UI.goalsBox(S) : '';
+    if (S.highlights && S.highlights.list) h += UI.highlightsBox(S.highlights.list, '📺 最近五佳球');
+    if ((S.tradeOffers || []).length) h += UI.box('📨 交易报价', '有 ' + S.tradeOffers.length + ' 份交易报价等你回复 ' + UI.link('去看看', 'go', { r: 'trade' }));
+    var mg = S.user.mgr; if (mg && mg.pts > 0) h += '<div class="tip">🎓 你有 ' + mg.pts + ' 个经理技能点没用 ' + UI.link('去加点', 'go', { r: 'manager' }) + '</div>';
     // 待办
     var todo = [];
     var stp = W().teamPlayers(S, W().userStreet(S));

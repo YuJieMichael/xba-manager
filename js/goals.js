@@ -49,7 +49,8 @@
     if (r.money) { W().earn(S, r.money, '赛季目标：' + g.cn); parts.push(U.money(r.money) + ' 资金'); }
     if (r.coins) { S.user.coins += r.coins; parts.push(r.coins + ' 游戏币'); }
     if (r.starcard) { S.user.items.starcard = (S.user.items.starcard || 0) + r.starcard; parts.push(r.starcard + ' 张升星卡'); }
-    W().msg(S, '🎯 完成赛季目标【' + g.cn + '】，奖励 ' + parts.join('、'), 'sys');
+    W().msg(S, '🎯 完成赛季目标【' + g.cn + '】，奖励 ' + parts.join('、') + '，经理经验 +80', 'sys');
+    X.Manager.xp(S, 80);
   }
   G.rewardText = function (r) {
     var parts = [];
@@ -121,6 +122,7 @@
       if (!ok) return;
       S.user.ach[a.id] = { season: S.season, day: S.day };
       S.user.coins += a.coins;
+      X.Manager.xp(S, 40);
       W().msg(S, '🏅 达成成就【' + a.cn + '】：' + a.desc + '，奖励 ' + a.coins + ' 游戏币', 'sys');
     });
   };

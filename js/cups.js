@@ -48,7 +48,7 @@
       var p = S.players[b.pid]; if (!p) return;
       if (tpOn) {
         // 训练点按上场时间和表现分配：主力拿大头，没上场的替补只有 1 点
-        var tp = b.min > 0 ? Math.round((b.min / 2 + Math.max(0, b.eff) * 0.6) * dbl) : dbl;
+        var tp = b.min > 0 ? Math.round((b.min / 2 + Math.max(0, b.eff) * 0.6) * dbl * X.Manager.tpMul(S)) : dbl;
         p.tp += tp; gained[p.id] = tp;
         p.mood = Math.max(0, p.mood - 2);
       }
@@ -66,7 +66,7 @@
     var userSide = home ? 'h' : 'a';
     var mid = W().saveMatch(S, type, res, home ? st : opp, home ? opp : st, 'street', opts.extra || {});
     W().applyMatch(S, res, { noStamina: !!opts.friendly });
-    if (!opts.friendly) W().addProf(st, userSide === 'h' ? res.used.h : res.used.a);
+    if (!opts.friendly) W().addProf(st, userSide === 'h' ? res.used.h : res.used.a, S);
     var won = home ? res.hs > res.as : res.as > res.hs;
     var gained = streetAfter(S, res, userSide, !!opts.tp);
     S.matches[mid].tp = gained;
@@ -160,6 +160,7 @@
         var res = playStreet(S, opp, 'cup', { tp: true, extra: { cup: c.name + ' ' + stage } });
         mids.push(res.mid);
         addStreetPts(S, res.won ? 12 : 4);
+        X.Manager.xp(S, res.won ? 3 : 1);
         if (res.won) reached = r + 1; else alive = false;
       }
       // 名次奖金

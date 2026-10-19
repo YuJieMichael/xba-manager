@@ -35,7 +35,7 @@
     if (!h || !a) { s.w = h ? home : away; return; }
     var isUser = h.isUser || a.isUser;
     if (isUser && X.Coach.autoOn(S)) X.Coach.prepare(S, 'league', h.isUser ? a.id : h.id);
-    var res = E.play(W().sideCfg(S, h, 'league', { home: true }), W().sideCfg(S, a, 'league'), { kind: 'pro', log: isUser, injuries: true });
+    var res = W().preResult(S, h, a) || E.play(W().sideCfg(S, h, 'league', { home: true }), W().sideCfg(S, a, 'league'), { kind: 'pro', log: isUser, injuries: true });
     W().applyMatch(S, res, { support: true });
     var g = { h: home, a: away, hs: res.hs, as: res.as };
     if (isUser) {
@@ -44,6 +44,7 @@
       W().userGameFinance(S, h.isUser ? h : a, h.isUser, res, h.isUser ? a.id : h.id);
       if (X.Rivals) X.Rivals.afterGame(S, h.isUser ? a.id : h.id, h.isUser ? res.hs - res.as : res.as - res.hs, 'playoff');
       out.userGame = g.mid;
+      X.Manager.xp(S, (h.isUser ? res.hs > res.as : res.as > res.hs) ? 20 : 6);
     }
     s.games.push(g);
     var winner = res.hs > res.as ? home : away;
@@ -55,22 +56,29 @@
     }
   }
 
-  PO.playDay = function (S, out) {
+  // 生成当天要打的对阵（可重复调用）
+  PO.prepareDay = function (S) {
     if (!S.playoffs || S.playoffs.season !== S.season) PO.setup(S);
+    var stage = PO.stageOf(S.day), gameNo = PO.gameOf(S.day);
+    if (gameNo !== 1 || stage === 0) return;
+    S.leagues.forEach(function (lg) {
+      var L = S.playoffs.leagues[lg.id];
+      if (!L || L.champion || L.rounds.length !== stage) return;
+      var prev = L.rounds[stage - 1], next = [];
+      for (var i = 0; i < prev.length; i += 2) {
+        var x = prev[i], y = prev[i + 1];
+        var sx = x.w === x.a ? x.sa : x.sb, sy = y.w === y.a ? y.sa : y.sb;
+        next.push(sx <= sy ? series(x.w, y.w, sx, sy) : series(y.w, x.w, sy, sx));
+      }
+      L.rounds.push(next);
+    });
+  };
+  PO.playDay = function (S, out) {
+    PO.prepareDay(S);
     var stage = PO.stageOf(S.day), gameNo = PO.gameOf(S.day);
     S.leagues.forEach(function (lg) {
       var L = S.playoffs.leagues[lg.id];
       if (!L || L.champion) return;
-      // 新一轮开始：由上一轮胜者组成对阵
-      if (gameNo === 1 && stage > 0 && L.rounds.length === stage) {
-        var prev = L.rounds[stage - 1], next = [];
-        for (var i = 0; i < prev.length; i += 2) {
-          var x = prev[i], y = prev[i + 1];
-          var sx = x.w === x.a ? x.sa : x.sb, sy = y.w === y.a ? y.sa : y.sb;
-          next.push(sx <= sy ? series(x.w, y.w, sx, sy) : series(y.w, x.w, sy, sx));
-        }
-        L.rounds.push(next);
-      }
       var round = L.rounds[stage];
       if (!round) return;
       round.forEach(function (s) { s.stage = stage; if (!s.w) playGame(S, lg, s, gameNo, out); });

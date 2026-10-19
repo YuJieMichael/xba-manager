@@ -137,16 +137,18 @@
   };
 
   P.emptyStats = function () {
-    return { gp: 0, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0 };
+    return { gp: 0, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0, zn: {} };
   };
 
   P.displayPos = function (p) { return p.pos; };
 
   // 潜力可见（会员：到队 1 天即可）
   P.potVisible = function (S, p) {
+    if (p.listing && X.Manager && X.Manager.lv(S, 'eye') >= 1) return true;
     var t = p.teamId && S.teams[p.teamId];
-    if (!t || !t.isUser) return false;
-    return (S.dayNo - (p.joined || 0)) >= 1 || p.seen.pot;
+    if (!t) return !!p.seen.pot;
+    if (!t.isUser) return false;
+    return (S.dayNo - (p.joined || 0)) >= 1 || !!p.seen.pot;
   };
 
   P.staminaF = function (st) { return st >= 80 ? 1 : Math.max(0.55, 1 - (80 - st) * 0.012); };
@@ -288,5 +290,6 @@
     var s = p.stats;
     s.gp += 1;
     for (var k in line) if (k !== 'pid' && typeof line[k] === 'number' && s[k] != null) s[k] += line[k];
+    if (line.zn) { s.zn = s.zn || {}; for (var z in line.zn) { var t = s.zn[z] = s.zn[z] || [0, 0]; t[0] += line.zn[z][0]; t[1] += line.zn[z][1]; } }
   };
 })(window.XBA);

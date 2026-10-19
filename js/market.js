@@ -17,6 +17,7 @@
   // 小秘书的提示价：舍去形式（49999 → 40000）
   M.hint = function (v) {
     if (v < 10) return 0;
+    if (X.UI && X.UI.S && X.Manager.lv(X.UI.S, 'eye') >= 2) return Math.ceil(v / 1000) * 1000;
     var mag = Math.pow(10, Math.floor(Math.log10(v)));
     return Math.floor(v / mag) * mag;
   };
@@ -117,7 +118,7 @@
     W().spend(S, price, M.NAMES[l.mk] + '：' + p.name);
     if (l.fromTeam && S.teams[l.fromTeam]) W().removeFromTeam(S, S.teams[l.fromTeam], p);
     W().addToTeam(S, team, p);
-    if (toPro) { p.salary = P.salaryFor(p); p.contract = U.ri(26, 52); p.green = false; p.tp = 0; }
+    if (toPro) { p.salary = Math.round(P.salaryFor(p) * X.Manager.salaryMul(S)); p.contract = U.ri(26, 52); p.green = false; p.tp = 0; }
     else { p.salary = 0; p.contract = 0; p.tp = 10; }
     p.joined = S.dayNo;
     W().msg(S, '竞拍成功！' + p.name + ' 以 ' + U.money(price) + ' 加盟' + team.name, 'market');
@@ -293,10 +294,11 @@
   };
 
   // 球探
+  M.scoutCost = function (S) { return X.Manager.lv(S, 'eye') >= 3 ? 20 : 30; };
   M.scout = function (S) {
     if (S.user.items.scout > 0) S.user.items.scout -= 1;
-    else if (S.user.coins >= 30) S.user.coins -= 30;
-    else return '需要球探道具或 30 游戏币';
+    else if (S.user.coins >= M.scoutCost(S)) S.user.coins -= M.scoutCost(S);
+    else return '需要球探道具或 ' + M.scoutCost(S) + ' 游戏币';
     var ids = [];
     for (var i = 0; i < 3; i++) {
       // 潜力档次：绿 45%、蓝 30%、紫 18%、红 7%
@@ -323,7 +325,7 @@
     maxTries = maxTries || 300;
     while (tries < maxTries) {
       if (S.user.items.scout > 0) items++;
-      else if (S.user.coins >= 30) coins += 30;
+      else if (S.user.coins >= M.scoutCost(S)) coins += M.scoutCost(S);
       else break;
       var err = M.scout(S);
       if (err) break;
@@ -354,12 +356,25 @@
   };
 
   // ===== 职业选秀 =====
+  // 选秀顺序：胜率最低的 14 队抽乐透决定前 4 顺位，其余按胜率由低到高
+  M.LOTTO = [140, 140, 140, 125, 105, 90, 75, 60, 45, 30, 20, 15, 10, 5];
   M.draftOrder = function (S) {
-    return Object.keys(S.teams).map(function (k) { return S.teams[k]; }).filter(function (t) { return t.kind === 'pro'; })
+    var order = Object.keys(S.teams).map(function (k) { return S.teams[k]; }).filter(function (t) { return t.kind === 'pro'; })
       .sort(function (a, b) {
         var ga = a.rec.w + a.rec.l || 1, gb = b.rec.w + b.rec.l || 1;
         return (a.rec.w / ga) - (b.rec.w / gb) || (b.level - a.level);
       }).map(function (t) { return t.id; });
+    var lot = order.slice(0, 14), odds = M.LOTTO.slice(0, lot.length), winners = [];
+    for (var k = 0; k < 4 && lot.length; k++) {
+      var i = U.wpick(odds);
+      winners.push(lot[i]); lot.splice(i, 1); odds.splice(i, 1);
+    }
+    var rest = order.slice(0, 14).filter(function (id) { return winners.indexOf(id) < 0; });
+    var final = winners.concat(rest, order.slice(14));
+    S.lottery = { season: S.season, entries: order.slice(0, 14).map(function (id, i) { return { tid: id, name: S.teams[id].name, odds: M.LOTTO[i] / 10, pick: final.indexOf(id) + 1, seed: i + 1 }; }) };
+    var mine = S.lottery.entries.find(function (e) { return e.tid === S.user.proId; });
+    if (mine) W().msg(S, '🎰 选秀乐透：你的球队（倒数第 ' + mine.seed + '）抽到第 ' + mine.pick + ' 顺位' + (mine.pick < mine.seed ? '，运气不错！' : ''), 'market');
+    return final;
   };
   M.setupDraft = function (S, order) {
     var pool = [];
@@ -370,7 +385,7 @@
       p.draft = true;
       pool.push(p.id);
     }
-    S.draft = { pool: pool, order: order, idx: 0, done: false, picks: [] };
+    S.draft = { pool: pool, order: order, idx: 0, done: false, picks: [], wo: { pts: 3 + (X.Manager.lv(S, 'eye') >= 3 ? 1 : 0), seen: {} } };
     M.draftRun(S);
   };
   function draftScore(S, p) { return P.ovr(p) + P.potRemain(p) * 0.6 + U.rf(0, 4); }
@@ -399,12 +414,28 @@
     if (d.order[d.idx] !== t.id) return '还没轮到你';
     var p = S.players[pid];
     if (!p || p.teamId || d.pool.indexOf(pid) < 0) return '该球员已被选走';
-    W().addToTeam(S, t, p); p.salary = P.salaryFor(p); p.contract = 52; p.draft = false;
+    W().addToTeam(S, t, p); p.salary = Math.round(P.salaryFor(p) * X.Manager.salaryMul(S)); p.contract = 52; p.draft = false;
+    p.seen.pot = true;
     d.picks.push({ team: t.name, player: p.name, pid: p.id, user: true });
     W().msg(S, '选秀：你选中了 ' + p.name + '（第 ' + (d.idx + 1) + ' 顺位）', 'market');
     d.idx++;
     M.draftRun(S);
     return null;
+  };
+  // 试训：花 1 次试训看清一名新秀的真实潜力
+  M.workout = function (S, pid) {
+    var d = S.draft; if (!d || d.done) return '选秀未进行';
+    if (d.wo.seen[pid]) return '已经试训过了';
+    if (d.wo.pts <= 0) return '试训次数用完了';
+    d.wo.pts--; d.wo.seen[pid] = true; S.players[pid].seen.pot = true;
+    return null;
+  };
+  // 模拟选秀：按 AI 选人逻辑（不含随机）预测顺位
+  M.mockRank = function (S) {
+    var d = S.draft, list = d.pool.map(function (id) { return S.players[id]; }).filter(function (p) { return p && !p.teamId; });
+    list.sort(function (a, b) { return (P.ovr(b) + P.potRemain(b) * 0.6) - (P.ovr(a) + P.potRemain(a) * 0.6); });
+    var r = {}; list.forEach(function (p, i) { r[p.id] = d.idx + i + 1; });
+    return r;
   };
   M.draftSkip = function (S) {
     var d = S.draft;

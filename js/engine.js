@@ -24,6 +24,8 @@
   // ===== 个人能力 =====
   var CLUTCH = false; // 当前是否关键时刻（第四节/加时，分差 5 分内）
   function tr(p, id) { return p._tr && p._tr[id]; }
+  // 特长加成倍率：1 + 基础效果 × 等级系数
+  function TF(p, id, base) { var lv = p._tr && p._tr[id]; return lv ? 1 + base * X.TRAIT_TIERS[lv].f : 1; }
   function condF(p) { return P.staminaF(p._st) * (p._morale || 1) * (p._boost || 1) * (p.persona === 'hothead' ? 1.03 : 1) * (CLUTCH && p.persona === 'bigheart' ? 1.05 : 1); }
 
   function methodAbility(p, m) {
@@ -36,13 +38,12 @@
       default: v = 0.45 * a.spd + 0.25 * a.dri + 0.15 * a.pas + 0.15 * a.jmp;
     }
     if (p._tr) {
-      if (m.zone === 'thr' && tr(p, 'sniper')) v *= 1.07;
-      if (m.zone === 'mid' && tr(p, 'shooter')) v *= 1.06;
-      if (m.zone === 'in' && tr(p, 'post')) v *= 1.06;
-      if (m.zone === 'in' && tr(p, 'dunker')) v *= 1.03;
-      if (m.zone === 'drv' && tr(p, 'slasher')) v *= 1.06;
-      if (m.zone === 'fb' && tr(p, 'jet')) v *= 1.08;
-      if (CLUTCH && tr(p, 'clutch')) v *= 1.08;
+      if (m.zone === 'thr') v *= TF(p, 'sniper', 0.07);
+      if (m.zone === 'mid') v *= TF(p, 'shooter', 0.06);
+      if (m.zone === 'in') v *= TF(p, 'post', 0.06) * TF(p, 'dunker', 0.03);
+      if (m.zone === 'drv') v *= TF(p, 'slasher', 0.06);
+      if (m.zone === 'fb') v *= TF(p, 'jet', 0.08);
+      if (CLUTCH) v *= TF(p, 'clutch', 0.08);
     }
     if (m.kind === 'iso') v *= 0.8 + 0.4 * p.iq.off / 100;
     else if (m.kind === 'fb') v *= 0.9 + 0.2 * p.iq.off / 100;
@@ -57,12 +58,12 @@
       var v = k === 'defIQ' ? p.iq.def : p.a[k];
       s += w * v; ws += w;
     }
-    return s / ws * condF(p) * (tr(p, 'lockdown') ? 1.06 : 1);
+    return s / ws * condF(p) * TF(p, 'lockdown', 0.06);
   }
 
   function rebAbility(p, off) {
     var a = p.a;
-    return (0.4 * a.reb + 0.2 * a.jmp + 0.15 * a.str + 0.25 * P.heightScore(p)) * (0.85 + 0.3 * (off ? p.iq.off : p.iq.def) / 100) * condF(p) * (tr(p, 'glass') ? 1.08 : 1);
+    return (0.4 * a.reb + 0.2 * a.jmp + 0.15 * a.str + 0.25 * P.heightScore(p)) * (0.85 + 0.3 * (off ? p.iq.off : p.iq.def) / 100) * condF(p) * TF(p, 'glass', 0.08);
   }
 
   // ===== 球队 / 阵容 =====
@@ -80,13 +81,13 @@
       p._st = cfg.noStamina ? 100 : p.st;
       p._out = false; p._pf = 0; p._sec = 0;
       p._morale = cfg.morale || 1;
-      p._tr = {}; P.traits(p).forEach(function (id) { p._tr[id] = 1; });
-      side.box[p.id] = { pid: p.id, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0 };
+      p._tr = {}; X.TRAITS.forEach(function (t) { var lv = t.lv(p); if (lv) p._tr[t.id] = lv; });
+      side.box[p.id] = { pid: p.id, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0, zn: {} };
     });
     return side;
   }
 
-  function preset(side) { return side.presets[side.curPreset] || side.presets[0]; }
+  function preset(side) { return side.manual || side.presets[side.curPreset] || side.presets[0]; }
 
   function tacticLevel(side, which, id) {
     var lv = (side.prof[which] && side.prof[which][id]) || 0;
@@ -155,8 +156,8 @@
     }
     sup /= ws;
     var extra;
-    if (m.kind === 'pass') extra = helper ? (0.7 * helper.a.pas + 0.3 * helper.iq.team) * condF(helper) * (tr(helper, 'playmaker') ? 1.08 : 1) : sup;
-    else if (m.kind === 'pr') extra = helper ? (0.5 * helper.a.str + 0.5 * helper.iq.team) * condF(helper) * (tr(helper, 'playmaker') ? 1.08 : 1) : sup;
+    if (m.kind === 'pass') extra = helper ? (0.7 * helper.a.pas + 0.3 * helper.iq.team) * condF(helper) * TF(helper, 'playmaker', 0.08) : sup;
+    else if (m.kind === 'pr') extra = helper ? (0.5 * helper.a.str + 0.5 * helper.iq.team) * condF(helper) * TF(helper, 'playmaker', 0.08) : sup;
     else if (m.kind === 'fb') extra = U.avg(side.court.map(function (p) { return p.a.spd * condF(p); }));
     else extra = sh.iq.off;
     var pr = preset(side);
@@ -214,14 +215,21 @@
   // ===== 主模拟 =====
   // cfgH/cfgA: {id,name,color,players,presets,config,prof,status,home,noStamina,morale}
   // opts: {kind:'pro'|'street', log:bool, injuries:bool, noStamina:bool}
-  E.play = function (cfgH, cfgA, opts) {
+  E.play = function (cfgH, cfgA, opts) { return E.start(cfgH, cfgA, opts).runAll(); };
+
+  // 可分段执行的比赛：G.run(停在第几秒) / G.override(手动阵容战术) / G.timeout() / G.state()
+  E.start = function (cfgH, cfgA, opts) {
     opts = opts || {};
     var kind = opts.kind || 'pro';
     if (opts.noStamina) { cfgH.noStamina = true; cfgA.noStamina = true; }
     var H = makeSide(cfgH, kind), A = makeSide(cfgA, kind);
     var qlen = kind === 'pro' ? 720 : 300, otlen = kind === 'pro' ? 300 : 180;
     var foulOut = kind === 'pro' ? 6 : 5;
-    var log = [], qs = [], injuries = [], forfeit = null;
+    var log = [], qs = [], injuries = [], forfeit = null, hl = [];
+    // 精彩镜头：[权重, 文字]
+    function hiL(w, txt) { hl.push([w, txt]); }
+    var clutchCand = null; // 最后时刻反超的进球，若最终赢球就是绝杀
+    function zoneRec(b, zone, made) { var z = b.zn[zone] = b.zn[zone] || [0, 0]; z[1]++; if (made) z[0]++; }
     var q = 0, clock = qlen, hq = 0, aq = 0;
     var drainMul = kind === 'pro' ? 1 : 1.2;
 
@@ -241,6 +249,7 @@
     function scoreDiff(side) { return side === H ? H.pts - A.pts : A.pts - H.pts; }
 
     function setPreset(side, quiet) {
+      if (side.manual) return fillCourt(side, lg, true);
       var idx = choosePreset(side, q, scoreDiff(side), kind);
       if (idx !== side.curPreset) {
         var first = side.curPreset < 0;
@@ -261,7 +270,7 @@
         side.court.forEach(function (p) {
           onIds[p.id] = 1;
           p._sec += sec;
-          if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.0075 + 0.01 * (1 - p.a.sta / 100)) * (tr(p, 'ironman') ? 0.75 : 1) * drainMul * (1 + (intensity - 2) * 0.25));
+          if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.0075 + 0.01 * (1 - p.a.sta / 100)) * (2 - TF(p, 'ironman', 0.25)) * drainMul * (1 + (intensity - 2) * 0.25));
           side.used.off[preset(side).off] = (side.used.off[preset(side).off] || 0) + sec;
           side.used.def[preset(side).def] = (side.used.def[preset(side).def] || 0) + sec;
         });
@@ -342,7 +351,7 @@
 
       // 失误 / 抢断
       if (m.id !== 'stl_fb') {
-        var stlD = U.avg(def.court.map(function (p, s) { return (0.6 * p.a.stl + 0.25 * p.a.spd + 0.15 * p.iq.def) * rw(X.DEF_POS_RANK.stl[def.cols[s]]) * condF(p) * (tr(p, 'thief') ? 1.25 : 1); }));
+        var stlD = U.avg(def.court.map(function (p, s) { return (0.6 * p.a.stl + 0.25 * p.a.spd + 0.15 * p.iq.def) * rw(X.DEF_POS_RANK.stl[def.cols[s]]) * condF(p) * TF(p, 'thief', 0.25); }));
         var hdl = U.avg(off.court.map(function (p) { return (0.5 * p.a.dri + 0.3 * p.a.pas + 0.2 * p.iq.team) * condF(p); }));
         var pStl = 0.06 * Math.pow(stlD / Math.max(5, hdl * 0.75), 0.8);
         var pTo = 0.055 * Math.pow(Math.max(5, hdl) / 45, -0.5);
@@ -387,11 +396,16 @@
           box(off, U.pick(mates)).ast++;
         }
         var txt;
-        var flashy = (m.zone === 'in' || m.zone === 'drv' || m.zone === 'fb') && Math.random() < 0.04 + Math.max(0, (P.effH(sh) - 215) / 120) + (sh.a.jmp + sh.a.spd) / 2500 + sh.iq.off / 2500 + (tr(sh, 'dunker') ? 0.1 : 0);
+        var flashy = (m.zone === 'in' || m.zone === 'drv' || m.zone === 'fb') && Math.random() < 0.04 + Math.max(0, (P.effH(sh) - 215) / 120) + (sh.a.jmp + sh.a.spd) / 2500 + sh.iq.off / 2500 + (TF(sh, 'dunker', 0.1) - 1);
         if (flashy && m.kind === 'pass' && helper) txt = fill(U.pick(TXT.alley), who);
         else if (flashy) txt = prefix + fill(U.pick(TXT.dunk), who);
         else txt = prefix + fill(U.pick(TXT[m.zone + '_make']), who);
         lg(txt + '（' + m.cn + '）', 'score', spot(off, m.zone, 1));
+        zoneRec(b, m.zone, true);
+        var other = off === H ? A : H;
+        if (q >= 3 && clock <= 10 && off.pts > other.pts && off.pts - pts <= other.pts) clutchCand = { side: off, txt: '【' + off.name + '】' + sh.name + ' 最后时刻' + (isThree ? '三分' : '') + '绝杀！' };
+        if (flashy) hiL(m.kind === 'pass' ? 4 : 3, '【' + off.name + '】' + txt);
+        else if (isThree && CLUTCH) hiL(3, '【' + off.name + '】' + sh.name + ' 关键时刻命中三分');
         if (fouled) { lg(dfd.name + ' 防守犯规', 'foul'); freeThrows(off, sh, 1, true); }
       } else if (fouled) {
         b.fga--; if (isThree) b.tpa--; // 投篮犯规未进不计出手
@@ -403,10 +417,11 @@
         if (m.zone !== 'thr' && m.zone !== 'fb') {
           var bws = def.court.map(function (p, s) { return Math.pow(p.a.blk * rw(X.DEF_POS_RANK.blk[def.cols[s]]) * P.heightScore(p) / 50, 2); });
           var bl = def.court[U.wpick(bws)];
-          var pBlk = U.clamp((0.06 + 0.22 * (bl.a.blk / 100) + (P.effH(bl) - P.effH(sh)) / 200) * (tr(bl, 'blocker') ? 1.4 : 1), 0.02, 0.45);
-          if (Math.random() < pBlk) { blocked = true; box(def, bl).blk++; lg(bl.name + ' 一记大帽扇飞了 ' + sh.name + ' 的出手！', 'blk', spot(off, m.zone, 2)); }
+          var pBlk = U.clamp((0.06 + 0.22 * (bl.a.blk / 100) + (P.effH(bl) - P.effH(sh)) / 200) * TF(bl, 'blocker', 0.4), 0.02, 0.5);
+          if (Math.random() < pBlk) { blocked = true; box(def, bl).blk++; hiL(2 + (P.effH(sh) > P.effH(bl) ? 1 : 0), '【' + def.name + '】' + bl.name + ' 一记大帽扇飞 ' + sh.name); lg(bl.name + ' 一记大帽扇飞了 ' + sh.name + ' 的出手！', 'blk', spot(off, m.zone, 2)); }
         }
         if (!blocked) lg(prefix + fill(U.pick(TXT[m.zone + '_miss']), who), '', spot(off, m.zone, 0));
+        zoneRec(b, m.zone, false);
       }
       // 犯规满离场
       if (fouled && dfd._pf >= foulOut) {
@@ -436,42 +451,82 @@
       lg(loser.name + ' 场上人数不足，比赛结束', 'end');
     }
 
+    var G = { H: H, A: A, done: false, result: null, timeouts: 3 };
     // 开赛前人数检查
     if (H.roster.length < H.nslots || A.roster.length < A.nslots) {
       var lose = H.roster.length < H.nslots ? H : A, win = lose === H ? A : H;
       win.pts = 20; lose.pts = 0;
-      return finish(true);
+      G.done = true; G.result = finish(true);
+      G.runAll = function () { return G.result; }; G.run = function () { return G; };
+      return G;
     }
 
-    var poss = U.chance(0.5) ? H : A, trans = null;
+    var poss = U.chance(0.5) ? H : A, trans = null, inQuarter = false, qsH = 0, qsA = 0, lastCheck = 0;
     lg('比赛开始！' + H.name + '（主）对阵 ' + A.name + '（客）', 'q');
-    while (true) {
+    function startQuarter() {
       clock = q < 4 ? qlen : otlen;
-      var qsH = H.pts, qsA = A.pts;
+      qsH = H.pts; qsA = A.pts;
       setPreset(H, false); setPreset(A, false);
       if (q > 0) [H, A].forEach(function (side) { side.roster.forEach(function (p) { if (!p._out) p._st = Math.min(100, p._st + 3); }); });
       lg(q < 4 ? '第' + (q + 1) + '节开始' : '加时赛开始', 'q');
-      var lastCheck = clock;
-      while (clock > 0) {
+      lastCheck = clock; inQuarter = true;
+    }
+    function endQuarter() {
+      qs.push([H.pts - qsH, A.pts - qsA]);
+      lg((q < 4 ? '第' + (q + 1) + '节' : '加时赛') + '结束，比分 ' + H.pts + ' : ' + A.pts, 'q');
+      q++; inQuarter = false;
+      if ((q >= 4 && H.pts !== A.pts) || q > 12) {
+        if (H.pts === A.pts) H.pts++;
+        G.done = true; G.result = finish(false);
+      }
+    }
+    // 打到本节剩余 stopAt 秒（0 = 打完本节）
+    G.run = function (stopAt) {
+      if (G.done) return G;
+      if (!inQuarter) startQuarter();
+      stopAt = stopAt || 0;
+      while (clock > stopAt) {
         var off = poss, def = poss === H ? A : H;
         CLUTCH = q >= 3 && Math.abs(H.pts - A.pts) <= 5 && (q >= 4 || clock <= 300);
         var res = possession(off, def, trans);
-        if (res === 'forfeit_def') { endByForfeit(def); break; }
-        if (!checkInjury(H)) { endByForfeit(H); break; }
-        if (!checkInjury(A)) { endByForfeit(A); break; }
+        var fl = null;
+        if (res === 'forfeit_def') fl = def;
+        else if (!checkInjury(H)) fl = H;
+        else if (!checkInjury(A)) fl = A;
+        if (fl) { endByForfeit(fl); G.done = true; G.result = finish(false); return G; }
         if (res === 'oreb') { trans = 'oreb'; continue; }
         trans = res === 'steal' ? 'steal' : res === 'dreb' ? 'dreb' : null;
         poss = def;
         if (lastCheck - clock >= 90) { lastCheck = clock; setPreset(H, false); setPreset(A, false); }
       }
-      if (forfeit) break;
-      qs.push([H.pts - qsH, A.pts - qsA]);
-      lg((q < 4 ? '第' + (q + 1) + '节' : '加时赛') + '结束，比分 ' + H.pts + ' : ' + A.pts, 'q');
-      q++;
-      if (q >= 4 && H.pts !== A.pts) break;
-      if (q > 12) { if (H.pts === A.pts) H.pts++; break; }
-    }
-    return finish(false);
+      if (clock <= 0) endQuarter();
+      return G;
+    };
+    G.runAll = function () { while (!G.done) G.run(0); return G.result; };
+    // 手动指定阵容战术（null = 交还给战术板）
+    G.override = function (key, pr) {
+      var side = key === 'h' ? H : A;
+      side.manual = pr || null;
+      if (pr) lg(side.name + ' 暂停调整：进攻【' + OFF[pr.off].cn + '】 防守【' + E.defName(pr.def, kind) + '】', 'tac');
+      fillCourt(side, lg, false);
+    };
+    G.timeout = function (key) {
+      if (G.timeouts <= 0) return false;
+      G.timeouts--;
+      var side = key === 'h' ? H : A;
+      [H, A].forEach(function (sd) { sd.court.forEach(function (p) { p._st = Math.min(100, p._st + 4); }); });
+      lg(side.name + ' 叫了暂停', 'q');
+      return true;
+    };
+    G.state = function () {
+      var pack = function (side) {
+        return { name: side.name, color: side.color, pts: side.pts, preset: preset(side), manual: !!side.manual, used: side.used,
+          court: side.court.map(function (p) { return p.id; }),
+          players: side.roster.map(function (p) { return { id: p.id, name: p.name, pos: p.pos, num: p.num, st: p._st, min: Math.round(p._sec / 60), pf: p._pf, out: p._out, b: side.box[p.id] }; }) };
+      };
+      return { q: q, clock: clock, inQuarter: inQuarter, qs: qs.slice(), log: log, h: pack(H), a: pack(A), done: G.done, timeouts: G.timeouts };
+    };
+    return G;
 
     function finish(pre) {
       [H, A].forEach(function (side) {
@@ -481,9 +536,10 @@
           bx.eff = bx.pts + bx.oreb + bx.dreb + bx.ast + bx.stl + bx.blk - (bx.fga - bx.fgm) - (bx.fta - bx.ftm) - bx.to;
         });
       });
+      if (clutchCand && ((clutchCand.side === H && H.pts > A.pts) || (clutchCand.side === A && A.pts > H.pts))) hiL(5, clutchCand.txt);
       lg('比赛结束！最终比分 ' + H.name + ' ' + H.pts + ' : ' + A.pts + ' ' + A.name, 'end');
       var res = {
-        hs: H.pts, as: A.pts, qs: qs, log: log, injuries: injuries, forfeit: forfeit || (pre ? { pre: true } : null),
+        hs: H.pts, as: A.pts, qs: qs, log: log, injuries: injuries, hl: hl, forfeit: forfeit || (pre ? { pre: true } : null),
         box: { h: H.roster.map(function (p) { return H.box[p.id]; }), a: A.roster.map(function (p) { return A.box[p.id]; }) },
         stam: {}, used: { h: H.used, a: A.used }
       };

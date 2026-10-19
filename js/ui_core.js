@@ -7,12 +7,12 @@
   var esc = U.esc;
 
   UI.NAV = [
-    { title: '俱乐部', short: '俱乐部', icon: '🏠', items: [['home', '俱乐部首页'], ['msgs', '系统消息'], ['trophies', '荣誉室'], ['datacenter', '数据中心']] },
+    { title: '俱乐部', short: '俱乐部', icon: '🏠', items: [['home', '俱乐部首页'], ['msgs', '系统消息'], ['trophies', '荣誉室'], ['datacenter', '数据中心'], ['manager', '经理生涯']] },
     { title: '球队管理', icon: '👥', items: [['players', '球员管理'], ['training', '球员训练'], ['staff', '职员管理'], ['arena', '球场建设'], ['finance', '球队财政']] },
     { title: '战术设定', icon: '📋', items: [['tac_pro', '职业战术'], ['tac_street', '街球战术']] },
     { title: '赛程管理', icon: '🏆', items: [['league', '职业联赛'], ['xcup', 'XBA杯'], ['allstar', '全明星'], ['cups', '街球杯赛']] },
     { title: '竞技中心', icon: '🏀', items: [['center', '训练中心'], ['wk', '胜者为王'], ['alliance', '篮球联盟'], ['mymatches', '我的比赛']] },
-    { title: '转会市场', icon: '💰', items: [['market', '转会市场'], ['draft', '职业选秀']] },
+    { title: '转会市场', icon: '💰', items: [['market', '转会市场'], ['trade', '球员交易'], ['draft', '职业选秀']] },
     { title: '其他', icon: '🛒', items: [['shop', '道具商店'], ['manual', '经理手册'], ['settings', '存档设置']] }
   ];
 
@@ -48,7 +48,7 @@
   };
   UI.traitTags = function (p) {
     var ts = X.TRAITS.filter(function (t) { return t.ok(p); });
-    return ts.length ? '<div class="tr-tags">' + ts.map(function (t) { return '<span class="tr-tag" title="' + t.desc + '">' + t.icon + t.cn + '</span>'; }).join('') + '</div>' : '';
+    return ts.length ? '<div class="tr-tags">' + ts.map(function (t) { var tier = X.TRAIT_TIERS[t.lv(p)]; return '<span class="tr-tag" style="border-color:' + tier.c + '" title="' + t.desc + '">' + t.icon + t.cn + '<b style="color:' + tier.c + '">·' + tier.cn + '</b></span>'; }).join('') + '</div>' : '';
   };
   UI.starBadge = function (p) { return p && p.star ? '<span class="pstar" title="升星 ' + p.star + ' 星">' + p.star + '★</span>' : ''; };
   UI.teamLink = function (t) {
@@ -129,7 +129,7 @@
       var s = p.stats, g = s.gp || 1;
       h += '<table class="mini"><tr><th>场次</th><th>分钟</th><th>得分</th><th>篮板</th><th>助攻</th></tr><tr><td>' + s.gp + '</td><td>' + U.r1(s.min / g) + '</td><td>' + U.r1(s.pts / g) + '</td><td>' + U.r1((s.oreb + s.dreb) / g) + '</td><td>' + U.r1(s.ast / g) + '</td></tr>' +
         '<tr><th>抢断</th><th>盖帽</th><th>投篮%</th><th>三分%</th><th>罚球%</th></tr><tr><td>' + U.r1(s.stl / g) + '</td><td>' + U.r1(s.blk / g) + '</td><td>' + (s.fga ? Math.round(s.fgm / s.fga * 100) : 0) + '</td><td>' + (s.tpa ? Math.round(s.tpm / s.tpa * 100) : 0) + '</td><td>' + (s.fta ? Math.round(s.ftm / s.fta * 100) : 0) + '</td></tr></table>' +
-        '<div class="muted small">本赛季职业联赛场均数据</div>';
+        '<div class="muted small">本赛季职业联赛场均数据</div>' + UI.hotZones(s.zn);
     } else {
       if (p.awards && p.awards.length) h += '<div class="hof-a">' + p.awards.map(function (a) { return '<span class="tag">🏅' + esc(a) + '</span>'; }).join('') + '</div>';
       h += p.career.length ? '<table class="mini"><tr><th>赛季</th><th>球队</th><th>场</th><th>分</th><th>板</th><th>助</th></tr>' + p.career.slice().reverse().map(function (c) {

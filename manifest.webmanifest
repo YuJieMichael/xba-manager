@@ -1,0 +1,16 @@
+{
+  "name": "XBA篮球经理 单机复刻版",
+  "short_name": "XBA篮球经理",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4d9b3",
+  "theme_color": "#a8162b",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

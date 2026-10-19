@@ -252,3 +252,6 @@ tr.ovr-row td { border-top: 1px dashed var(--line); padding-top: 3px; }
   td.an { width: 52px; font-size: 12px; } td.av { width: 36px; font-size: 12px; }
   .st-r .btn.big { padding: 6px 12px; }
 }
+/* 综合分档颜色 */
+.ovrc.o60 { color: #1f9a2a; font-weight: bold; } .ovrc.o70 { color: #1f63d6; font-weight: bold; } .ovrc.o80 { color: #8a3fc4; font-weight: bold; }
+.ovrc.o90 { color: #e07a00; font-weight: bold; } .ovrc.o100 { color: #d0202e; font-weight: bold; text-shadow: 0 0 4px rgba(255,180,0,.6); }

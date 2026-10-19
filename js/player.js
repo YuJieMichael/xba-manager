@@ -163,6 +163,26 @@
     return { gain: gain, cost: cost, msg: p.name + ' ' + X.ATTR_CN[k] + ' +' + gain.toFixed(1) + extra };
   };
 
+  // 职业队手动加点：从全队共用的训练点池里扣
+  P.proTrainCost = function (trainer) {
+    var tl = trainer ? X.Staff.effLevel(trainer) : 0;
+    return Math.max(5, Math.round(10 * (1 - 0.045 * tl)));
+  };
+  P.proTrainClick = function (S, p, k, trainer) {
+    var tl = trainer ? X.Staff.effLevel(trainer) : 0, cost = P.proTrainCost(trainer);
+    if ((S.user.proTP || 0) < cost) return { gain: 0, cost: 0, msg: '职业队训练点不足（需要' + cost + '）' };
+    if (p.inj > 0) return { gain: 0, cost: 0, msg: p.name + ' 正在养伤，不能训练' };
+    if (p.st < 30) return { gain: 0, cost: 0, msg: p.name + ' 体力太低，不能训练' };
+    var gf = gapF(p, k);
+    if (gf === 0) return { gain: 0, cost: 0, msg: X.ATTR_CN[k] + ' 已达到潜力上限' };
+    var ageF = p.age <= 24 ? 1 : p.age <= 28 ? 0.85 : p.age <= 31 ? 0.65 : 0.45;
+    var gain = Math.min(3, U.rf(0.8, 3) * Math.max(0.4, gf) * ageF * (1 + tl * 0.02));
+    gain = Math.min(gain, p.m[k] - p.a[k]);
+    p.a[k] += gain; S.user.proTP -= cost;
+    p.st = Math.max(0, p.st - 1);
+    return { gain: gain, cost: cost, msg: p.name + ' ' + X.ATTR_CN[k] + ' +' + gain.toFixed(1) };
+  };
+
   // ===== 升星：训满后突破潜力上限 =====
   P.isMaxed = function (p) { return P.potRemain(p) < 2; };
   P.starCost = function (p) { return (p.star || 0) + 1; };

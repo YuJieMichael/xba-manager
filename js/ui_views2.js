@@ -28,7 +28,7 @@
       h += '<div class="slot' + (selSlot === s ? ' sel' : '') + (p ? '' : ' empty') + (badPos ? ' hurt' : '') + '" style="left:' + xy[0] + '%;top:' + xy[1] + '%" data-act="' + act + '" data-slot="' + s + '">' +
         '<div class="jersey" style="background:' + team.color + '">' + (p ? p.num : '?') + '</div>' +
         '<div class="slot-n">' + slots[s] + '</div>' +
-        (p ? '<div class="slot-p">' + esc(p.name) + '<br><span>' + p.pos + ' · ' + P.ovr(p, spos[s]).toFixed(1) + ' · 体' + Math.round(p.st) + '</span></div>' : '<div class="slot-p muted">点击替补上场</div>') + '</div>';
+        (p ? '<div class="slot-p">' + esc(p.name) + '<br><span>' + p.pos + ' · ' + UI.ovrTag(P.ovr(p, spos[s])) + ' · 体' + Math.round(p.st) + '</span></div>' : '<div class="slot-p muted">点击替补上场</div>') + '</div>';
     }
     return h + '</div>';
   }
@@ -38,7 +38,7 @@
     pr.lineup.forEach(function (id) { if (id) on[id] = 1; });
     var ps = W().teamPlayers(S, team).filter(function (p) { return !on[p.id]; }).sort(function (a, b) { return P.ovr(b) - P.ovr(a); });
     return '<div class="bench"><div class="bench-h">替补席（先点场上位置，再点替补球员换上；再点一次场上位置可让其下场）</div>' + ps.map(function (p) {
-      return '<span class="bp' + (p.inj > 0 ? ' hurt' : '') + '" data-act="' + act + '" data-pid="' + p.id + '"><b class="jn" style="background:' + team.color + '">' + p.num + '</b>' + esc(p.name) + ' <i>' + p.pos + ' ' + P.ovr(p).toFixed(1) + ' 体' + Math.round(p.st) + (p.inj > 0 ? ' 伤' : '') + '</i></span>';
+      return '<span class="bp' + (p.inj > 0 ? ' hurt' : '') + '" data-act="' + act + '" data-pid="' + p.id + '"><b class="jn" style="background:' + team.color + '">' + p.num + '</b>' + esc(p.name) + ' <i>' + p.pos + ' ' + UI.ovrTag(P.ovr(p)) + ' 体' + Math.round(p.st) + (p.inj > 0 ? ' 伤' : '') + '</i></span>';
     }).join('') + '</div>';
   }
 

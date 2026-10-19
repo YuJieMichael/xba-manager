@@ -177,7 +177,7 @@
       user: {
         manager: manager || '经理', proId: null, streetId: null, money: 500000, coins: 50, streetLevel: 1, streetPts: 0,
         items: { double: 1, physio: 2, scout: 1, reset: 0, hidden: 3, newbie: 20, fund: 0 }, selectCards: 0, proSeasons: 0,
-        watch: [], doubleUntil: 0, doubleAuto: false, wk: null, wkDay: -1, wkPts: 0, ledger: {}, trophies: [], onboarded: false, member: true
+        watch: [], proTP: 0, doubleUntil: 0, doubleAuto: false, wk: null, wkDay: -1, wkPts: 0, ledger: {}, trophies: [], onboarded: false, member: true
       }
     };
     // 联赛金字塔
@@ -294,6 +294,14 @@
     });
   };
 
+  // 职业队训练点：每场比赛按上场时间和表现累积到全队共用的点数池
+  W.earnProTP = function (S, res, userIsHome) {
+    var box = userIsHome ? res.box.h : res.box.a, tot = 0;
+    box.forEach(function (b) { if (b.min > 0) tot += Math.round(b.min / 6 + Math.max(0, b.eff) * 0.3); });
+    S.user.proTP = (S.user.proTP || 0) + tot;
+    return tot;
+  };
+
   // 战术熟练度
   W.addProf = function (team, used) {
     ['off', 'def'].forEach(function (w) {
@@ -341,7 +349,7 @@
       // 比赛录像：记录双方主要使用的进攻/防守战术，供研究对手
       var r = { h: h.id, a: a.id, hs: res.hs, as: res.as, tac: [top(res.used.h.off), top(res.used.h.def), top(res.used.a.off), top(res.used.a.def)] };
       if (isUser) {
-        r.mid = W.saveMatch(S, 'league', res, h, a, 'pro', { round: round, league: lg.name });
+        r.mid = W.saveMatch(S, 'league', res, h, a, 'pro', { round: round, league: lg.name, proTP: W.earnProTP(S, res, h.isUser) });
         out.userGame = r.mid;
         userGameFinance(S, h.isUser ? h : a, h.isUser, res);
       }

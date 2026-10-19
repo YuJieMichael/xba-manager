@@ -33,7 +33,7 @@
       var n = Object.keys(chosen).length;
       var rows = ids.map(function (id) {
         var p = S.players[id], on = !!chosen[id];
-        return '<tr class="' + (on ? 'sel' : '') + '"><td><input type="checkbox" data-change="obpick" data-pid="' + id + '"' + (on ? ' checked' : '') + '></td><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td><b>' + P.ovr(p).toFixed(1) + '</b></td><td>' + UI.stars(P.stars(p)) + '</td>' + (pro ? '<td>' + U.money(P.salaryFor(p)) + '</td>' : '') + '<td>' + U.money(p.price) + '</td></tr>';
+        return '<tr class="' + (on ? 'sel' : '') + '"><td><input type="checkbox" data-change="obpick" data-pid="' + id + '"' + (on ? ' checked' : '') + '></td><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + UI.stars(P.stars(p)) + '</td>' + (pro ? '<td>' + U.money(P.salaryFor(p)) + '</td>' : '') + '<td>' + U.money(p.price) + '</td></tr>';
       }).join('');
       h += UI.box((pro ? '第二步：挑选职业队球员（需 ' + need + ' 名）' : '第三步：挑选街球队球员（需 ' + need + ' 名）'),
         '<p class="tip">' + (pro ? '选人时要综合考虑身体条件、综合水平和年龄。和 NBA 一样，XBA 最奇缺的是<b>中锋</b>！这笔选人资金系统只给一次，尽量花光。' : '街球队用于培养年轻球员。年轻球员可塑性强，能力相近时一定选年龄小的。潜力星级越高，成长空间越大。') + '</p>' +
@@ -161,7 +161,7 @@
         else ops.push(UI.link('出售', 'sellpro', { pid: p.id }));
         if (p.contract < 10) ops.push(UI.link('续约', 'renew', { pid: p.id }, 'hot'));
         if (P.isMaxed(p) && (p.star || 0) < X.STAR_MAX) ops.push(UI.link('升星', 'starup', { pid: p.id }, 'hot'));
-        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.stam(p.st) + '</td><td><b>' + P.ovr(p).toFixed(1) + '</b></td><td>' + U.money(p.salary) + '</td><td class="' + (p.contract < 10 ? 'red' : '') + '">' + p.contract + '</td><td>' + Math.round(p.support) + '</td><td>' + ops.join(' ') + '</td></tr>';
+        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.stam(p.st) + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + U.money(p.salary) + '</td><td class="' + (p.contract < 10 ? 'red' : '') + '">' + p.contract + '</td><td>' + Math.round(p.support) + '</td><td>' + ops.join(' ') + '</td></tr>';
       }).join('') + '</table>';
       h += '<div class="sumline">球员工资总额：' + UI.money(pay) + '/轮　工资帽：' + UI.money(cap) + '　阵容状态：<b>' + Math.round(W().lineupStatus(S, pro) * 100) + '%</b>　人数 ' + ps.length + '/' + M().PRO_MAX + '（最少 ' + M().PRO_MIN + '）' +
         (pay > cap ? '　<b class="red">已超工资帽！奢侈税 = 3000 + 超出额×5</b>' : '　<span class="ok">未达工资帽</span>') + '</div>';
@@ -178,14 +178,14 @@
           ops.push(UI.link('挂牌', 'sellst', { pid: p.id }));
           ops.push(UI.link('下放', 'release', { pid: p.id }));
         }
-        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.stam(p.st) + '</td><td>' + UI.stam(p.mood) + '</td><td><b>' + P.ovr(p).toFixed(1) + '</b></td><td>' + (P.potVisible(S, p) ? UI.stars(P.stars(p)) : '<span class="muted">?</span>') + '</td><td>' + p.tp + '</td><td>' + ops.join(' ') + '</td></tr>';
+        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.stam(p.st) + '</td><td>' + UI.stam(p.mood) + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + (P.potVisible(S, p) ? UI.stars(P.stars(p)) : '<span class="muted">?</span>') + '</td><td>' + p.tp + '</td><td>' + ops.join(' ') + '</td></tr>';
       }).join('') + '</table>';
-      h += '<div class="sumline">人数 ' + sp.length + '/' + M().ST_MAX + '（最少 ' + M().ST_MIN + '）　街球选拔卡：<b>' + S.user.selectCards + '</b> 张　' + UI.btn('雇用球探（' + (S.user.items.scout > 0 ? '道具×' + S.user.items.scout : '30 游戏币') + '）', 'scout', {}, 'sm') + '</div>';
+      h += '<div class="sumline">人数 ' + sp.length + '/' + M().ST_MAX + '（最少 ' + M().ST_MIN + '）　街球选拔卡：<b>' + S.user.selectCards + '</b> 张　' + UI.btn('雇用球探（' + (S.user.items.scout > 0 ? '道具×' + S.user.items.scout : '30 游戏币') + '）', 'scout', {}, 'sm') + '　自动球探，直到出现 <select id="scout-target">' + M().GRADES.map(function (g, i) { return '<option value="' + i + '"' + (i === (UI.scoutTarget == null ? 2 : UI.scoutTarget) ? ' selected' : '') + '>' + g.cn + '·' + g.name + (i < 3 ? ' 或更好' : '') + '</option>'; }).join('') + '</select> ' + UI.btn('开始', 'scoutauto', {}, 'sm') + ' <span class="muted small">每次 30 游戏币，找到后自动签下</span></div>';
       h += '<p class="tip">选拔：用选拔卡把 18 岁以上街球员提拔到职业队，潜力上限会提高（现值越接近上限、年龄越小，提升越多）。选秀：参加职业选秀离队，你只得到几万资金。挂牌：在街头竞价出售，获得游戏币。下放：球员结束篮球生涯。</p>';
       if (S.scout) {
         h += UI.box('球探报告', '<table class="grid"><tr><th>姓名</th><th>年龄</th><th>位置</th><th>身高</th><th>体重</th><th>综合</th><th></th></tr>' + S.scout.map(function (id) {
           var p = S.players[id];
-          return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + P.ovr(p).toFixed(1) + '</td><td>' + UI.btn('签约', 'signscout', { pid: id }, 'sm nowrap') + '</td></tr>';
+          return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.ovrTag(P.ovr(p)) + '</td><td>' + UI.btn('签约', 'signscout', { pid: id }, 'sm nowrap') + '</td></tr>';
         }).join('') + '</table><div class="muted small">三选一。签约后球探才会告诉你他的潜力评价：' + M().GRADES.map(function (g) { return '<span class="grade" style="background:' + g.c + '">' + g.cn + '</span>'; }).join(' &lt; ') + '，红色是难得一见的天才。</div>');
       }
     }
@@ -230,16 +230,27 @@
   A.sdraftdo = function (d) { UI.closeModal(); UI.result(M().streetDraft(UI.S, d.pid), '球员已参加选秀'); };
   A.promote = function (d) {
     var p = UI.S.players[d.pid];
-    UI.modal('选拔 ' + esc(p.name), '<p>使用 1 张街球选拔卡，将 ' + esc(p.name) + '（' + p.age + '岁，综合 ' + P.ovr(p).toFixed(1) + '）提拔到职业队？</p><p class="muted">提拔后潜力上限提高，名字变为绿色（可按市场价出售）。剩余选拔卡：' + UI.S.user.selectCards + '</p><p>' + UI.btn('确定选拔', 'promotedo', { pid: p.id }) + '</p>');
+    UI.modal('选拔 ' + esc(p.name), '<p>使用 1 张街球选拔卡，将 ' + esc(p.name) + '（' + p.age + '岁，综合 ' + UI.ovrTag(P.ovr(p)) + '）提拔到职业队？</p><p class="muted">提拔后潜力上限提高，名字变为绿色（可按市场价出售）。剩余选拔卡：' + UI.S.user.selectCards + '</p><p>' + UI.btn('确定选拔', 'promotedo', { pid: p.id }) + '</p>');
   };
   A.promotedo = function (d) { UI.closeModal(); UI.result(M().promote(UI.S, d.pid), '选拔成功！'); };
   A.scout = function () { UI.result(M().scout(UI.S), '球探带回了 3 名年轻球员的报告'); };
+  A.scoutauto = function () {
+    var S = UI.S, t = +document.getElementById('scout-target').value;
+    UI.scoutTarget = t;
+    var r = M().scoutUntil(S, t);
+    if (r.err) { UI.persist(); UI.render(); return UI.toast(r.err, true); }
+    UI.persist(); UI.render();
+    UI.revealScout(S.players[r.pid], '自动球探找了 ' + r.tries + ' 次' + (r.coins ? '，花费 ' + r.coins + ' 游戏币' : '') + (r.items ? '，用掉 ' + r.items + ' 张球探卡' : ''));
+  };
   A.signscout = function (d) {
     var err = M().signScout(UI.S, d.pid);
     if (!UI.result(err)) return;
-    var p = UI.S.players[d.pid], g = M().GRADES[p.scoutGrade];
+    UI.revealScout(UI.S.players[d.pid]);
+  };
+  UI.revealScout = function (p, note) {
+    var g = M().GRADES[p.scoutGrade];
     UI.sel = p.id; UI.renderCard();
-    UI.modal('球探评价', '<div class="reveal">' + UI.avatar(p, W().userStreet(UI.S).color, 72) + '<div><div class="reveal-n">' + esc(p.name) + ' 已加入街球队</div><div>球探对他的潜力评价：</div><div class="grade big" style="background:' + g.c + '">' + g.cn + ' · ' + g.name + '</div></div></div><p>' + UI.btn('知道了', 'closemodal') + '</p>');
+    UI.modal('球探评价', '<div class="reveal">' + UI.avatar(p, W().userStreet(UI.S).color, 72) + '<div><div class="reveal-n">' + esc(p.name) + ' 已加入街球队</div><div>球探对他的潜力评价：</div><div class="grade big" style="background:' + g.c + '">' + g.cn + ' · ' + g.name + '</div></div></div>' + (note ? '<p class="muted small">' + esc(note) + '</p>' : '') + '<p>' + UI.btn('知道了', 'closemodal') + '</p>');
   };
   A.bonus = function (d) { W().setBonus(UI.S, +d.v); UI.result(null, +d.v ? '下一轮将发放奖金，士气提升' : '已取消奖金'); };
 
@@ -304,7 +315,7 @@
       h += '<p>' + UI.btn('全队一键加点', 'autotrainall', {}, 'big') + ' ' + UI.btn('全队理疗', 'physioall', { t: 'street' }) + ' <span class="muted small">一键加点把训练点一次加完；全队理疗让所有人体力、心情回满（理疗卡 ' + S.user.items.physio + ' 张，不够自动花 15 游戏币买）</span></p>';
       h += '<table class="grid train"><tr><th>姓名</th><th>年龄</th><th>体力</th><th>心情</th><th>训练点</th><th>综合</th>' + X.ATTRS.map(function (k) { return '<th>' + X.ATTR_CN[k] + '</th>'; }).join('') + '<th></th></tr>' + ps.map(function (p) {
         var vis = P.potVisible(S, p);
-        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + UI.stam(p.st) + '</td><td>' + UI.stam(p.mood) + '</td><td><b>' + p.tp + '</b></td><td><b class="ovr">' + P.ovr(p).toFixed(1) + '</b></td>' + X.ATTRS.map(function (k) {
+        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + UI.stam(p.st) + '</td><td>' + UI.stam(p.mood) + '</td><td><b>' + p.tp + '</b>' + (p.tp > 0 ? '<br>' + UI.link('转让', 'tpgive', { pid: p.id }, P.isMaxed(p) ? 'hot' : '') : '') + '</td><td><b class="ovr">' + UI.ovrTag(P.ovr(p)) + '</b></td>' + X.ATTRS.map(function (k) {
           var gap = p.m[k] - p.a[k], band = P.potBand(gap);
           return '<td><span class="tv" style="border-bottom:3px solid ' + (vis ? X.POT_COLORS[band] : '#ccc') + '">' + p.a[k].toFixed(1) + '</span><br>' + (p.tp >= cost ? '<a class="plus" data-act="trainst" data-pid="' + p.id + '" data-k="' + k + '">+</a>' : '') + '</td>';
         }).join('') + '<td>' + (p.tp >= cost ? UI.btn('一键加点', 'autotrain', { pid: p.id }, 'sm nowrap') : '') + '</td></tr>';
@@ -313,20 +324,70 @@
       if (UI.lastTrain) h += UI.box('训练结果', UI.lastTrain.map(function (m) { return '<div>' + esc(m) + '</div>'; }).join(''));
     } else {
       var pro = W().userPro(S), pps = W().teamPlayers(S, pro);
-      var ptr = pro.staff.trainer;
-      h += '<p class="tip">职业队训练不消耗训练点。为每名球员选择训练项目，<b>效果在第二天显示</b>。训练每天消耗少量体力；选择「休息」可多恢复体力。' + (ptr ? '训练员 ' + esc(ptr.name) + '（' + ptr.level + '级）会提高训练效果。' : '<b class="red">没有训练员，训练效果较差。</b>') + '</p>';
-      h += '<p>全队统一：' + UI.btn('按位置重点', 'protrainall', { k: 'auto' }, 'sm') + ' ' + UI.btn('全部休息', 'protrainall', { k: 'rest' }, 'sm') + ' ' + UI.btn('全队理疗', 'physioall', { t: 'pro' }, 'sm') + '</p>';
-      h += '<table class="grid"><tr><th>姓名</th><th>年龄</th><th>位置</th><th>体力</th><th>综合</th><th>训练项目</th><th>该项能力</th><th>潜力剩余</th></tr>' + pps.map(function (p) {
+      var ptr = pro.staff.trainer, pcost = P.proTrainCost(ptr), pool = S.user.proTP || 0;
+      h += '<p class="tip">职业队每场比赛（联赛、XBA杯、表演赛）会按上场时间和表现获得训练点，全部汇总到<b>职业队训练点</b>里，由你分给任意球员加点（每次 ' + pcost + ' 点，一次最多 +3）。另外每名球员还可以安排一个<b>每日训练项目</b>，第二天自动生效。' + (ptr ? '训练员 ' + esc(ptr.name) + '（' + ptr.level + '级）会提高训练效果、节省训练点。' : '<b class="red">没有训练员，训练效果较差。</b>') + '</p>';
+      h += '<div class="sumline">职业队训练点：<b class="money">' + pool + '</b>　' + UI.btn('全队一键加点', 'proautoall', {}, 'big') + ' ' + UI.btn('全队理疗', 'physioall', { t: 'pro' }, 'sm') + '　每日训练：' + UI.btn('按位置重点', 'protrainall', { k: 'auto' }, 'sm') + ' ' + UI.btn('全部休息', 'protrainall', { k: 'rest' }, 'sm') + '</div>';
+      h += '<table class="grid train"><tr><th>姓名</th><th>年龄</th><th>位置</th><th>体力</th><th>综合</th>' + X.ATTRS.map(function (k) { return '<th>' + X.ATTR_CN[k] + '</th>'; }).join('') + '<th>每日训练</th><th>潜力剩余</th><th></th></tr>' + pps.map(function (p) {
         var vis = P.potVisible(S, p);
         var opts = '<option value="">（未安排）</option><option value="rest"' + (p.train === 'rest' ? ' selected' : '') + '>休息</option>' + X.ATTRS.map(function (k) {
           var full = p.m[k] - p.a[k] < 0.05;
           return '<option value="' + k + '"' + (p.train === k ? ' selected' : '') + '>' + X.ATTR_CN[k] + (vis && full ? '（已满）' : '') + '</option>';
         }).join('');
-        var cur = p.train && p.train !== 'rest' ? p.a[p.train].toFixed(1) : '-';
-        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + UI.stam(p.st) + '</td><td>' + P.ovr(p).toFixed(1) + '</td><td><select data-change="protrain" data-pid="' + p.id + '">' + opts + '</select></td><td>' + cur + '</td><td>' + (P.isMaxed(p) && (p.star || 0) < X.STAR_MAX ? UI.btn('升星', 'starup', { pid: p.id }, 'sm on nowrap') : P.isMaxed(p) ? '<span class="pstar">满星</span>' : P.potRemain(p).toFixed(1)) + '</td></tr>';
+        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + UI.stam(p.st) + '</td><td><b class="ovr">' + UI.ovrTag(P.ovr(p)) + '</b></td>' + X.ATTRS.map(function (k) {
+          var band = P.potBand(p.m[k] - p.a[k]);
+          return '<td><span class="tv" style="border-bottom:3px solid ' + (vis ? X.POT_COLORS[band] : '#ccc') + '">' + p.a[k].toFixed(1) + '</span><br>' + (pool >= pcost ? '<a class="plus" data-act="trainpro" data-pid="' + p.id + '" data-k="' + k + '">+</a>' : '') + '</td>';
+        }).join('') + '<td><select data-change="protrain" data-pid="' + p.id + '">' + opts + '</select></td><td>' + (P.isMaxed(p) && (p.star || 0) < X.STAR_MAX ? UI.btn('升星', 'starup', { pid: p.id }, 'sm on nowrap') : P.isMaxed(p) ? '<span class="pstar">满星</span>' : P.potRemain(p).toFixed(1)) + '</td><td>' + (pool >= pcost ? UI.btn('一键加点', 'proauto', { pid: p.id }, 'sm nowrap') : '') + '</td></tr>';
       }).join('') + '</table>';
+      if (UI.lastTrain) h += UI.box('训练结果', UI.lastTrain.map(function (m) { return '<div>' + esc(m) + '</div>'; }).join(''));
     }
     return h;
+  };
+  function autoTrainPro(S, p, maxClicks) {
+    var tr = W().userPro(S).staff.trainer, ranks = X.POS_ATTR_RANK[p.pos], gains = {}, used = 0, stop = '';
+    var order = X.ATTRS.map(function (k, i) { return { k: k, r: ranks[i] }; });
+    for (var n = 0; n < (maxClicks || 1000); n++) {
+      var cands = order.filter(function (o) { return p.m[o.k] - p.a[o.k] > 0.05; });
+      if (!cands.length) { stop = (p.star || 0) < X.STAR_MAX ? '已训满，可以升星了' : '已满星满级'; break; }
+      var o = cands[U.wpick(cands.map(function (c) { return Math.pow(12 - c.r, 2) * (p.m[c.k] - p.a[c.k]); }))];
+      var r = P.proTrainClick(S, p, o.k, tr);
+      if (!r.gain) { if (r.cost === 0 && /训练点|体力|养伤/.test(r.msg)) { stop = r.msg.replace(p.name + ' ', ''); break; } continue; }
+      gains[o.k] = (gains[o.k] || 0) + r.gain; used += r.cost;
+    }
+    return { gains: gains, used: used, stop: stop };
+  }
+  function trainSummary(p, r) {
+    var parts = X.ATTRS.filter(function (k) { return r.gains[k]; }).map(function (k) { return X.ATTR_CN[k] + '+' + r.gains[k].toFixed(1); });
+    return p.name + '：' + (parts.length ? parts.join(' ') + '（用掉 ' + r.used + ' 训练点）' : '没有加点') + (r.stop ? '　' + r.stop : '');
+  }
+  A.trainpro = function (d) {
+    var S = UI.S, p = S.players[d.pid];
+    var r = P.proTrainClick(S, p, d.k, W().userPro(S).staff.trainer);
+    UI.lastTrain = [r.msg];
+    if (!r.gain) UI.toast(r.msg, true);
+    UI.persist(); UI.render();
+  };
+  A.proauto = function (d) {
+    var p = UI.S.players[d.pid];
+    UI.lastTrain = [trainSummary(p, autoTrainPro(UI.S, p))];
+    UI.persist(); UI.render();
+  };
+  // 全队一键加点：轮流给每人加一次，直到训练点用完或全员练满
+  A.proautoall = function () {
+    var S = UI.S, ps = W().teamPlayers(S, W().userPro(S)), acc = {};
+    ps.forEach(function (p) { acc[p.id] = { gains: {}, used: 0, stop: '' }; });
+    var active = ps.slice();
+    while (active.length) {
+      active = active.filter(function (p) {
+        var r = autoTrainPro(S, p, 1), a = acc[p.id];
+        for (var k in r.gains) a.gains[k] = (a.gains[k] || 0) + r.gains[k];
+        a.used += r.used;
+        if (r.stop) { a.stop = r.stop; return false; }
+        return r.used > 0;
+      });
+      if ((S.user.proTP || 0) < P.proTrainCost(W().userPro(S).staff.trainer)) break;
+    }
+    UI.lastTrain = ps.map(function (p) { return trainSummary(p, acc[p.id]); });
+    UI.persist(); UI.render();
   };
   A.trainst = function (d) {
     var S = UI.S, p = S.players[d.pid], st = W().userStreet(S);
@@ -341,7 +402,7 @@
     var order = X.ATTRS.map(function (k, i) { return { k: k, r: ranks[i] }; });
     for (var n = 0; n < 1000; n++) {
       var cands = order.filter(function (o) { return p.m[o.k] - p.a[o.k] > 0.05; });
-      if (!cands.length) { stop = '所有能力都已达到上限' + (p.age >= 18 ? '，可以考虑用选拔卡提拔到职业队' : ''); break; }
+      if (!cands.length) { stop = '所有能力都已达到上限，剩余训练点可以点「转让」给别人' + (p.age >= 18 ? '，也可以用选拔卡提拔到职业队' : ''); break; }
       var o = cands[U.wpick(cands.map(function (c) { return Math.pow(12 - c.r, 2) * (p.m[c.k] - p.a[c.k]); }))];
       var r = P.streetTrain(S, p, o.k, st.staff.trainer);
       if (!r.gain) { if (r.cost === 0 && /训练点|体力|养伤/.test(r.msg)) { stop = r.msg.replace(p.name + ' ', ''); break; } continue; }
@@ -350,6 +411,26 @@
     var parts = X.ATTRS.filter(function (k) { return gains[k]; }).map(function (k) { return X.ATTR_CN[k] + '+' + gains[k].toFixed(1); });
     return p.name + '：' + (parts.length ? parts.join(' ') + '（用掉 ' + used + ' 训练点）' : '没有加点') + (stop ? '　' + stop : '');
   }
+  // 训练点转让：给其他街球员，或并入职业队训练点
+  A.tpgive = function (d) {
+    var S = UI.S, p = S.players[d.pid], st = W().userStreet(S);
+    var opts = W().teamPlayers(S, st).filter(function (x) { return x !== p; }).map(function (x) {
+      return '<option value="' + x.id + '">' + esc(x.name) + '（' + x.pos + '，综合 ' + P.ovr(x).toFixed(1) + '，潜力剩余 ' + P.potRemain(x).toFixed(1) + '）</option>';
+    }).join('') + '<option value="pro">职业队训练点（全队共用）</option>';
+    UI.modal('转让训练点：' + esc(p.name), '<p>' + esc(p.name) + ' 有 <b>' + p.tp + '</b> 训练点' + (P.isMaxed(p) ? '，他已经训满了' : '') + '。</p><div class="form"><label>转给 <select id="tp-to">' + opts + '</select></label>' +
+      '<label>数量 <input id="tp-n" type="number" min="1" max="' + p.tp + '" value="' + p.tp + '"></label></div><p>' + UI.btn('确认转让', 'tpgivedo', { pid: p.id }) + '</p>');
+  };
+  A.tpgivedo = function (d) {
+    var S = UI.S, p = S.players[d.pid], to = document.getElementById('tp-to').value;
+    var n = Math.min(p.tp, Math.max(0, Math.round(+document.getElementById('tp-n').value)));
+    if (!n) return UI.toast('请输入数量', true);
+    p.tp -= n;
+    var name;
+    if (to === 'pro') { S.user.proTP = (S.user.proTP || 0) + n; name = '职业队训练点'; }
+    else { S.players[to].tp += n; name = S.players[to].name; }
+    UI.closeModal();
+    UI.result(null, p.name + ' 把 ' + n + ' 训练点转给了 ' + name);
+  };
   A.autotrain = function (d) {
     UI.lastTrain = [autoTrainPlayer(UI.S, UI.S.players[d.pid])];
     UI.persist(); UI.render();

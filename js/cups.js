@@ -47,7 +47,8 @@
     box.forEach(function (b) {
       var p = S.players[b.pid]; if (!p) return;
       if (tpOn) {
-        var tp = Math.round((3 + Math.max(0, b.eff) * 0.5 + b.min / 3) * dbl);
+        // 训练点按上场时间和表现分配：主力拿大头，没上场的替补只有 1 点
+        var tp = b.min > 0 ? Math.round((b.min / 2 + Math.max(0, b.eff) * 0.6) * dbl) : dbl;
         p.tp += tp; gained[p.id] = tp;
         p.mood = Math.max(0, p.mood - 2);
       }
@@ -189,7 +190,7 @@
     var me = W().sideCfg(S, u, 'other', { home: home }), them = W().sideCfg(S, opp, 'league', { home: !home });
     var opts = { kind: 'pro', log: true, injuries: !friendly, noStamina: friendly };
     var res = home ? E.play(me, them, opts) : E.play(them, me, opts);
-    var mid = W().saveMatch(S, type, res, home ? u : opp, home ? opp : u, 'pro', {});
+    var mid = W().saveMatch(S, type, res, home ? u : opp, home ? opp : u, 'pro', type === 'show' ? { proTP: W().earnProTP(S, res, home) } : {});
     W().applyMatch(S, res, { noStamina: friendly });
     // AI 对手也消耗体力（友谊赛除外）
     var won = home ? res.hs > res.as : res.as > res.hs;

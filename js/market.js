@@ -315,6 +315,29 @@
     var r = P.potRemain(p);
     return M.GRADES[r >= 50 ? 3 : r >= 37 ? 2 : r >= 25 ? 1 : 0];
   };
+  // 自动球探：一直找，直到候选人里出现目标颜色（或更好）为止，自动签下
+  M.scoutUntil = function (S, target, maxTries) {
+    var st = W().userStreet(S);
+    if (st.playerIds.length >= M.ST_MAX) return { err: '街球队人数已满，先腾出位置' };
+    var tries = 0, coins = 0, items = 0;
+    maxTries = maxTries || 300;
+    while (tries < maxTries) {
+      if (S.user.items.scout > 0) items++;
+      else if (S.user.coins >= 30) coins += 30;
+      else break;
+      var err = M.scout(S);
+      if (err) break;
+      tries++;
+      var best = null, bg = -1;
+      S.scout.forEach(function (id) { var g = M.GRADES.indexOf(M.scoutGrade(S.players[id])); if (g > bg) { bg = g; best = id; } });
+      if (bg >= target) {
+        M.signScout(S, best);
+        return { pid: best, tries: tries, coins: coins, items: items };
+      }
+    }
+    if (S.scout) { S.scout.forEach(function (id) { var p = S.players[id]; if (p && !p.teamId) delete S.players[id]; }); S.scout = null; }
+    return { err: tries >= maxTries ? '找了 ' + tries + ' 次还没找到，先休息一下吧' : '游戏币不足（每次 30），找了 ' + tries + ' 次没找到', tries: tries, coins: coins, items: items };
+  };
   M.signScout = function (S, pid) {
     var st = W().userStreet(S);
     if (!S.scout || S.scout.indexOf(pid) < 0) return '无效';

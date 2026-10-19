@@ -78,7 +78,7 @@
     if (isUser) {
       W().applyMatch(S, res, { noStamina: true });
       W().addProf(h.isUser ? h : a, h.isUser ? res.used.h : res.used.a);
-      r.mid = W().saveMatch(S, 'xcup', res, h, a, 'pro', { cup: 'XBA杯 ' + label });
+      r.mid = W().saveMatch(S, 'xcup', res, h, a, 'pro', { cup: 'XBA杯 ' + label, proTP: W().earnProTP(S, res, h.isUser) });
       out.xcupGames = (out.xcupGames || []).concat([{ mid: r.mid, label: label }]);
     }
     return r;

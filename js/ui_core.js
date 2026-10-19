@@ -50,6 +50,11 @@
     v = Math.round(v);
     return '<span class="' + (v >= 80 ? 'ok' : v >= 60 ? 'warn' : 'bad') + '">' + v + '</span>';
   };
+  // 综合颜色：60 绿、70 蓝、80 紫、90 橙、100 红
+  UI.ovrTag = function (v) {
+    var c = v >= 100 ? 'o100' : v >= 90 ? 'o90' : v >= 80 ? 'o80' : v >= 70 ? 'o70' : v >= 60 ? 'o60' : '';
+    return '<span class="ovrc ' + c + '">' + v.toFixed(1) + '</span>';
+  };
   UI.stars = function (n) { return '<span class="stars" title="潜力星级 ' + n + '/10">' + '★'.repeat(Math.ceil(n / 2)) + '</span>'; };
   UI.money = function (v) { return '<span class="money">' + U.money(v) + '</span>'; };
 
@@ -80,7 +85,7 @@
       return '<tr><td class="an">' + X.ATTR_CN[k] + '</td><td class="ab" title="' + tip + '"><div class="bar"><i style="width:' + U.clamp(v, 0, 100) + '%;background:' + (v > 100 ? 'linear-gradient(90deg,#f7c600,#ff7a00,#d0202e)' : color) + '"></i></div></td><td class="av' + (v > 100 ? ' over' : '') + '">' + v.toFixed(1) + '</td></tr>';
     }).join('') + (function () {
       var o = P.ovr(p), om = P.ovr(p, null, true);
-      return '<tr class="ovr-row"><td class="an"><b>综合</b></td><td class="ab" title="按 ' + p.pos + ' 位置加权"><div class="bar"><i style="width:' + U.clamp(o, 0, 100) + '%;background:' + (o > 100 ? 'linear-gradient(90deg,#f7c600,#ff7a00,#d0202e)' : '#b4431a') + '"></i></div></td><td class="av' + (o > 100 ? ' over' : '') + '"><b>' + o.toFixed(1) + '</b></td></tr>';
+      return '<tr class="ovr-row"><td class="an"><b>综合</b></td><td class="ab" title="按 ' + p.pos + ' 位置加权"><div class="bar"><i style="width:' + U.clamp(o, 0, 100) + '%;background:' + (o > 100 ? 'linear-gradient(90deg,#f7c600,#ff7a00,#d0202e)' : '#b4431a') + '"></i></div></td><td class="av' + (o > 100 ? ' over' : '') + '"><b>' + UI.ovrTag(o) + '</b></td></tr>';
     })() + '</table>';
   };
 
@@ -97,7 +102,7 @@
       '<div>位置 <b>' + p.pos + '</b> 号码 <b>' + p.num + '</b></div>' +
       '<div>身高 ' + p.h + 'CM</div><div>体重 ' + p.w + 'KG</div>' +
       '<div>体力 ' + UI.stam(p.st) + (street ? ' 心情 ' + UI.stam(p.mood) : '') + '</div>' +
-      '<div>综合 <b class="ovr">' + P.ovr(p).toFixed(1) + '</b></div>' + (p.star ? '<div>升星 <span class="pstar">' + '★'.repeat(p.star) + '</span></div>' : '') + '</div></div>';
+      '<div>综合 <b class="ovr">' + UI.ovrTag(P.ovr(p)) + '</b></div>' + (p.star ? '<div>升星 <span class="pstar">' + '★'.repeat(p.star) + '</span></div>' : '') + '</div></div>';
     h += '<div class="card-meta">' + (t ? UI.teamLink(t) : '<span class="muted">自由球员</span>') +
       (!street && t ? ' · 合同 ' + p.contract + ' 轮' : '') + (P.potVisible(S, p) || p.seen.pot ? ' · ' + UI.stars(P.stars(p)) : '') + (p.scoutGrade != null && X.Market.GRADES[p.scoutGrade] ? ' <span class="grade" title="球探潜力评价" style="background:' + X.Market.GRADES[p.scoutGrade].c + '">' + X.Market.GRADES[p.scoutGrade].cn + '</span>' : '') +
       (p.inj > 0 ? '<div class="red">伤病：' + esc(p.injName) + '，还需 ' + p.inj + ' 轮</div>' : '') + '</div>';

@@ -125,6 +125,7 @@
         '<tr><td>' + esc(m.home.name) + '</td>' + m.qs.map(function (q) { return '<td>' + q[0] + '</td>'; }).join('') + '<td><b>' + m.hs + '</b></td></tr>' +
         '<tr><td>' + esc(m.away.name) + '</td>' + m.qs.map(function (q) { return '<td>' + q[1] + '</td>'; }).join('') + '<td><b>' + m.as + '</b></td></tr></table>';
     }
+    if (m.proTP) h += '<div class="tip">职业队训练点 +' + m.proTP + '（当前共 ' + (UI.S.user.proTP || 0) + ' 点，到「球员训练 → 职业队」加点）</div>';
     if (m.tp && Object.keys(m.tp).length) h += '<div class="tip">训练点收获：' + Object.keys(m.tp).map(function (pid) { var p = getP(pid); return esc(p ? p.name : '?') + ' +' + m.tp[pid]; }).join('，') + '</div>';
     h += UI.tabs('match', [['log', live ? '🔴 现场文字直播' : '文字直播'], ['box', '技术统计']], tab);
     if (tab === 'log') {

@@ -110,8 +110,8 @@
     // 待办
     var todo = [];
     var stp = W().teamPlayers(S, W().userStreet(S));
-    var tp = U.sum(stp.map(function (p) { return p.tp; }));
-    if (tp >= 10) todo.push('街球队员共有 <b>' + tp + '</b> 训练点未使用 ' + UI.link('去训练', 'go', { r: 'training' }));
+    var tp = S.user.streetTP || 0;
+    if (tp >= 10) todo.push('街球队还有 <b>' + tp + '</b> 训练点没用 ' + UI.link('去训练', 'go', { r: 'training' }));
     var noTrain = W().teamPlayers(S, pro).filter(function (p) { return !p.train; }).length;
     if (noTrain) todo.push(noTrain + ' 名职业队员没有安排训练项目 ' + UI.link('去安排', 'go', { r: 'training' }));
     ['trainer', 'nutri', 'doctor'].forEach(function (t) { if (!pro.staff[t]) todo.push('职业队缺少' + X.STAFF_TYPES[t] + ' ' + UI.link('去招募', 'go', { r: 'staff' })); });
@@ -175,7 +175,7 @@
       h += '<p>球员奖金（下一轮发放，提高士气）：' + [0, 5000, 20000, 50000].map(function (v) { return UI.btn(v ? U.money(v) : '不发', 'bonus', { v: v }, 'sm' + (pro.bonus === v ? ' on' : '')); }).join(' ') + '</p>';
     } else {
       var st = W().userStreet(S), sp = W().teamPlayers(S, st).sort(function (a, b) { return P.ovr(b) - P.ovr(a); });
-      h += '<table class="grid"><tr><th>姓名</th><th>号码</th><th>年龄</th><th>位置</th><th>身高</th><th>体重</th><th>体力</th><th>心情</th><th>综合</th><th>潜力</th><th>训练点</th><th>操作</th></tr>' + sp.map(function (p) {
+      h += '<table class="grid"><tr><th>姓名</th><th>号码</th><th>年龄</th><th>位置</th><th>身高</th><th>体重</th><th>体力</th><th>心情</th><th>综合</th><th>潜力</th><th>操作</th></tr>' + sp.map(function (p) {
         var ops = [];
         if (p.listing) ops.push('<span class="tag">竞价中</span>');
         else {
@@ -184,7 +184,7 @@
           ops.push(UI.link('挂牌', 'sellst', { pid: p.id }));
           ops.push(UI.link('下放', 'release', { pid: p.id }));
         }
-        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.stam(p.st) + '</td><td>' + UI.stam(p.mood) + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + (P.potVisible(S, p) ? UI.stars(P.stars(p)) : '<span class="muted">?</span>') + '</td><td>' + p.tp + '</td><td>' + ops.join(' ') + '</td></tr>';
+        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.stam(p.st) + '</td><td>' + UI.stam(p.mood) + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + (P.potVisible(S, p) ? UI.stars(P.stars(p)) : '<span class="muted">?</span>') + '</td><td>' + ops.join(' ') + '</td></tr>';
       }).join('') + '</table>';
       h += '<div class="sumline">人数 ' + sp.length + '/' + M().ST_MAX + '（最少 ' + M().ST_MIN + '）　街球选拔卡：<b>' + S.user.selectCards + '</b> 张　' + UI.btn('雇用球探（' + (S.user.items.scout > 0 ? '道具×' + S.user.items.scout : '30 游戏币') + '）', 'scout', {}, 'sm') + '　自动球探，直到出现 <select id="scout-target">' + M().GRADES.map(function (g, i) { return '<option value="' + i + '"' + (i === (UI.scoutTarget == null ? 2 : UI.scoutTarget) ? ' selected' : '') + '>' + g.cn + '·' + g.name + (i < 3 ? ' 或更好' : '') + '</option>'; }).join('') + '</select> ' + UI.btn('开始', 'scoutauto', {}, 'sm') + ' <span class="muted small">每次 30 游戏币，找到后自动签下</span></div>';
       h += '<p class="tip">选拔：用选拔卡把 18 岁以上街球员提拔到职业队，潜力上限会提高（现值越接近上限、年龄越小，提升越多）。选秀：参加职业选秀离队，你只得到几万资金。挂牌：在街头竞价出售，获得游戏币。下放：球员结束篮球生涯。</p>';
@@ -317,14 +317,15 @@
       var st = W().userStreet(S), ps = W().teamPlayers(S, st);
       var tr = st.staff.trainer;
       var cost = Math.max(5, Math.round(10 * (1 - 0.045 * (tr ? tr.eff : 0))));
-      h += '<p class="tip">街球队员训练消耗<b>训练点</b>（每次 ' + cost + ' 点' + (tr ? '，训练员 ' + esc(tr.name) + ' 帮你节省' : '') + '），一次最多提升单项 3 点；会消耗体力、影响心情。训练点来自新人杯、小杯赛、大杯赛和训练赛。' + '<br>' + UI.doubleWidget() + '</p>';
-      h += '<p>' + UI.btn('全队一键加点', 'autotrainall', {}, 'big') + ' ' + UI.btn('全队理疗', 'physioall', { t: 'street' }) + ' <span class="muted small">一键加点把训练点一次加完；全队理疗让所有人体力、心情回满（理疗卡 ' + S.user.items.physio + ' 张，不够自动花 15 游戏币买）</span></p>';
-      h += '<table class="grid train"><tr><th>姓名</th><th>年龄</th><th>体力</th><th>心情</th><th>训练点</th><th>综合</th>' + X.ATTRS.map(function (k) { return '<th>' + X.ATTR_CN[k] + '</th>'; }).join('') + '<th></th></tr>' + ps.map(function (p) {
+      h += '<p class="tip">街球队员训练消耗<b>全队共用的街球训练点</b>（每次 ' + cost + ' 点' + (tr ? '，训练员 ' + esc(tr.name) + ' 帮你节省' : '') + '），一次最多提升单项 3 点；会消耗体力、影响心情。训练点来自新人杯、小杯赛、大杯赛和训练赛。' + '<br>' + UI.doubleWidget() + '</p>';
+      var spool = S.user.streetTP || 0;
+      h += '<div class="sumline">街球训练点：<b class="money">' + spool + '</b>　' + UI.btn('全队一键加点', 'autotrainall', {}, 'big') + ' ' + UI.btn('全队理疗', 'physioall', { t: 'street' }) + ' <span class="muted small">理疗卡 ' + S.user.items.physio + ' 张，不够自动花 15 游戏币买</span></div>' + UI.tpExchange(S);
+      h += '<table class="grid train"><tr><th>姓名</th><th>年龄</th><th>体力</th><th>心情</th><th>综合</th>' + X.ATTRS.map(function (k) { return '<th>' + X.ATTR_CN[k] + '</th>'; }).join('') + '<th></th></tr>' + ps.map(function (p) {
         var vis = P.potVisible(S, p);
-        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + UI.stam(p.st) + '</td><td>' + UI.stam(p.mood) + '</td><td><b>' + p.tp + '</b>' + (p.tp > 0 ? '<br>' + UI.link('转让', 'tpgive', { pid: p.id }, P.isMaxed(p) ? 'hot' : '') : '') + '</td><td><b class="ovr">' + UI.ovrTag(P.ovr(p)) + '</b></td>' + X.ATTRS.map(function (k) {
+        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + UI.stam(p.st) + '</td><td>' + UI.stam(p.mood) + '</td><td><b class="ovr">' + UI.ovrTag(P.ovr(p)) + '</b></td>' + X.ATTRS.map(function (k) {
           var gap = p.m[k] - p.a[k], band = P.potBand(gap);
-          return '<td><span class="tv" style="border-bottom:3px solid ' + (vis ? X.POT_COLORS[band] : '#ccc') + '">' + p.a[k].toFixed(1) + '</span><br>' + (p.tp >= cost ? '<a class="plus" data-act="trainst" data-pid="' + p.id + '" data-k="' + k + '">+</a>' : '') + '</td>';
-        }).join('') + '<td>' + (p.tp >= cost ? UI.btn('一键加点', 'autotrain', { pid: p.id }, 'sm nowrap') : '') + '</td></tr>';
+          return '<td><span class="tv" style="border-bottom:3px solid ' + (vis ? X.POT_COLORS[band] : '#ccc') + '">' + p.a[k].toFixed(1) + '</span><br>' + (spool >= cost ? '<a class="plus" data-act="trainst" data-pid="' + p.id + '" data-k="' + k + '">+</a>' : '') + '</td>';
+        }).join('') + '<td>' + (spool >= cost ? UI.btn('一键加点', 'autotrain', { pid: p.id }, 'sm nowrap') : '') + '</td></tr>';
       }).join('') + '</table>';
       h += '<p class="muted small">属性下方的颜色条代表潜力：绿色 = 成长空间大，红色/灰色 = 接近上限。一键加点会按球员位置的重要能力自动分配训练点。</p>';
       if (UI.lastTrain) h += UI.box('训练结果', UI.lastTrain.map(function (m) { return '<div>' + esc(m) + '</div>'; }).join(''));
@@ -332,7 +333,7 @@
       var pro = W().userPro(S), pps = W().teamPlayers(S, pro);
       var ptr = pro.staff.trainer, pcost = P.proTrainCost(ptr), pool = S.user.proTP || 0;
       h += '<p class="tip">职业队每场比赛（联赛、XBA杯、表演赛）会按上场时间和表现获得训练点，全部汇总到<b>职业队训练点</b>里，由你分给任意球员加点（每次 ' + pcost + ' 点，一次最多 +3）。另外每名球员还可以安排一个<b>每日训练项目</b>，第二天自动生效。' + (ptr ? '训练员 ' + esc(ptr.name) + '（' + ptr.level + '级）会提高训练效果、节省训练点。' : '<b class="red">没有训练员，训练效果较差。</b>') + '</p>';
-      h += '<div class="sumline">职业队训练点：<b class="money">' + pool + '</b>　' + UI.btn('全队一键加点', 'proautoall', {}, 'big') + ' ' + UI.btn('全队理疗', 'physioall', { t: 'pro' }, 'sm') + '　每日训练：' + UI.btn('按位置重点', 'protrainall', { k: 'auto' }, 'sm') + ' ' + UI.btn('全部休息', 'protrainall', { k: 'rest' }, 'sm') + '</div>';
+      h += '<div class="sumline">职业队训练点：<b class="money">' + pool + '</b>　' + UI.btn('全队一键加点', 'proautoall', {}, 'big') + ' ' + UI.btn('全队理疗', 'physioall', { t: 'pro' }, 'sm') + '　每日训练：' + UI.btn('按位置重点', 'protrainall', { k: 'auto' }, 'sm') + ' ' + UI.btn('全部休息', 'protrainall', { k: 'rest' }, 'sm') + '</div>' + UI.tpExchange(S);
       h += '<table class="grid train"><tr><th>姓名</th><th>年龄</th><th>位置</th><th>体力</th><th>综合</th>' + X.ATTRS.map(function (k) { return '<th>' + X.ATTR_CN[k] + '</th>'; }).join('') + '<th>每日训练</th><th>潜力剩余</th><th></th></tr>' + pps.map(function (p) {
         var vis = P.potVisible(S, p);
         var opts = '<option value="">（未安排）</option><option value="rest"' + (p.train === 'rest' ? ' selected' : '') + '>休息</option>' + X.ATTRS.map(function (k) {
@@ -402,49 +403,57 @@
     if (!r.gain) UI.toast(r.msg, true);
     UI.persist(); UI.render();
   };
-  // 一键加点：按位置重要度和剩余潜力分配训练点，返回汇总
-  function autoTrainPlayer(S, p) {
+  // 一键加点（街球队共用训练点）：maxClicks 控制每次加几下，便于全队轮流
+  function autoStreet(S, p, maxClicks) {
     var st = W().userStreet(S), ranks = X.POS_ATTR_RANK[p.pos], gains = {}, used = 0, stop = '';
     var order = X.ATTRS.map(function (k, i) { return { k: k, r: ranks[i] }; });
-    for (var n = 0; n < 1000; n++) {
+    for (var n = 0; n < (maxClicks || 1000); n++) {
       var cands = order.filter(function (o) { return p.m[o.k] - p.a[o.k] > 0.05; });
-      if (!cands.length) { stop = '所有能力都已达到上限，剩余训练点可以点「转让」给别人' + (p.age >= 18 ? '，也可以用选拔卡提拔到职业队' : ''); break; }
+      if (!cands.length) { stop = '所有能力都已练满' + (p.age >= 18 ? '，可以用选拔卡提拔到职业队' : ''); break; }
       var o = cands[U.wpick(cands.map(function (c) { return Math.pow(12 - c.r, 2) * (p.m[c.k] - p.a[c.k]); }))];
       var r = P.streetTrain(S, p, o.k, st.staff.trainer);
       if (!r.gain) { if (r.cost === 0 && /训练点|体力|养伤/.test(r.msg)) { stop = r.msg.replace(p.name + ' ', ''); break; } continue; }
       gains[o.k] = (gains[o.k] || 0) + r.gain; used += r.cost;
     }
-    var parts = X.ATTRS.filter(function (k) { return gains[k]; }).map(function (k) { return X.ATTR_CN[k] + '+' + gains[k].toFixed(1); });
-    return p.name + '：' + (parts.length ? parts.join(' ') + '（用掉 ' + used + ' 训练点）' : '没有加点') + (stop ? '　' + stop : '');
+    return { gains: gains, used: used, stop: stop };
   }
-  // 训练点转让：给其他街球员，或并入职业队训练点
-  A.tpgive = function (d) {
-    var S = UI.S, p = S.players[d.pid], st = W().userStreet(S);
-    var opts = W().teamPlayers(S, st).filter(function (x) { return x !== p; }).map(function (x) {
-      return '<option value="' + x.id + '">' + esc(x.name) + '（' + x.pos + '，综合 ' + P.ovr(x).toFixed(1) + '，潜力剩余 ' + P.potRemain(x).toFixed(1) + '）</option>';
-    }).join('') + '<option value="pro">职业队训练点（全队共用）</option>';
-    UI.modal('转让训练点：' + esc(p.name), '<p>' + esc(p.name) + ' 有 <b>' + p.tp + '</b> 训练点' + (P.isMaxed(p) ? '，他已经训满了' : '') + '。</p><div class="form"><label>转给 <select id="tp-to">' + opts + '</select></label>' +
-      '<label>数量 <input id="tp-n" type="number" min="1" max="' + p.tp + '" value="' + p.tp + '"></label></div><p>' + UI.btn('确认转让', 'tpgivedo', { pid: p.id }) + '</p>');
-  };
-  A.tpgivedo = function (d) {
-    var S = UI.S, p = S.players[d.pid], to = document.getElementById('tp-to').value;
-    var n = Math.min(p.tp, Math.max(0, Math.round(+document.getElementById('tp-n').value)));
-    if (!n) return UI.toast('请输入数量', true);
-    p.tp -= n;
-    var name;
-    if (to === 'pro') { S.user.proTP = (S.user.proTP || 0) + n; name = '职业队训练点'; }
-    else { S.players[to].tp += n; name = S.players[to].name; }
-    UI.closeModal();
-    UI.result(null, p.name + ' 把 ' + n + ' 训练点转给了 ' + name);
-  };
+  function sumLine(p, r) {
+    var parts = X.ATTRS.filter(function (k) { return r.gains[k]; }).map(function (k) { return X.ATTR_CN[k] + '+' + r.gains[k].toFixed(1); });
+    return p.name + '：' + (parts.length ? parts.join(' ') + '（用掉 ' + r.used + ' 训练点）' : '没有加点') + (r.stop ? '　' + r.stop : '');
+  }
   A.autotrain = function (d) {
-    UI.lastTrain = [autoTrainPlayer(UI.S, UI.S.players[d.pid])];
+    var p = UI.S.players[d.pid];
+    UI.lastTrain = [sumLine(p, autoStreet(UI.S, p))];
     UI.persist(); UI.render();
   };
+  // 全队一键加点：轮流每人加一下，直到训练点用完
   A.autotrainall = function () {
-    var S = UI.S;
-    UI.lastTrain = W().teamPlayers(S, W().userStreet(S)).map(function (p) { return autoTrainPlayer(S, p); });
+    var S = UI.S, ps = W().teamPlayers(S, W().userStreet(S)), acc = {}, active = ps.slice();
+    ps.forEach(function (p) { acc[p.id] = { gains: {}, used: 0, stop: '' }; });
+    while (active.length) {
+      active = active.filter(function (p) {
+        var r = autoStreet(S, p, 1), x = acc[p.id];
+        for (var k in r.gains) x.gains[k] = (x.gains[k] || 0) + r.gains[k];
+        x.used += r.used;
+        if (r.stop) { x.stop = r.stop; return false; }
+        return r.used > 0;
+      });
+    }
+    UI.lastTrain = ps.map(function (p) { return sumLine(p, acc[p.id]); });
     UI.persist(); UI.render();
+  };
+  // 街球 ⇄ 职业 训练点互通
+  UI.tpExchange = function (S) {
+    return '<div class="tpx">🔁 训练点互通：街球 <b class="money">' + (S.user.streetTP || 0) + '</b> ⇄ 职业 <b class="money">' + (S.user.proTP || 0) + '</b>　数量 <input id="tpx-n" type="number" min="1" step="10" value="50" style="width:70px"> ' +
+      UI.btn('街球 → 职业', 'tpx', { d: 'sp' }, 'sm') + ' ' + UI.btn('职业 → 街球', 'tpx', { d: 'ps' }, 'sm') + ' ' + UI.btn('全部 → 职业', 'tpx', { d: 'sp', all: 1 }, 'sm') + ' ' + UI.btn('全部 → 街球', 'tpx', { d: 'ps', all: 1 }, 'sm') + '</div>';
+  };
+  A.tpx = function (d) {
+    var S = UI.S, from = d.d === 'sp' ? 'streetTP' : 'proTP', to = d.d === 'sp' ? 'proTP' : 'streetTP';
+    var have = S.user[from] || 0, n = d.all ? have : Math.round(+document.getElementById('tpx-n').value || 0);
+    n = Math.min(n, have);
+    if (n <= 0) return UI.toast('训练点不足', true);
+    S.user[from] = have - n; S.user[to] = (S.user[to] || 0) + n;
+    UI.result(null, '已转移 ' + n + ' 训练点');
   };
   // ===== 升星 =====
   A.starup = function (d) {

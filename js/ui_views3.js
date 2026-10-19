@@ -130,7 +130,7 @@
         '<tr><td>' + esc(m.away.name) + '</td>' + m.qs.map(function (q) { return '<td>' + q[1] + '</td>'; }).join('') + '<td><b>' + m.as + '</b></td></tr></table>';
     }
     if (m.proTP) h += '<div class="tip">职业队训练点 +' + m.proTP + '（当前共 ' + (UI.S.user.proTP || 0) + ' 点，到「球员训练 → 职业队」加点）</div>';
-    if (m.tp && Object.keys(m.tp).length) h += '<div class="tip">训练点收获：' + Object.keys(m.tp).map(function (pid) { var p = getP(pid); return esc(p ? p.name : '?') + ' +' + m.tp[pid]; }).join('，') + '</div>';
+    if (m.tp && Object.keys(m.tp).length) h += '<div class="tip">街球训练点 +' + U.sum(Object.keys(m.tp).map(function (pid) { return m.tp[pid]; })) + '（' + Object.keys(m.tp).map(function (pid) { var p = getP(pid); return esc(p ? p.name : '?') + ' ' + m.tp[pid]; }).join('，') + '），已存入街球队训练点</div>';
     var hasShots = m.log && m.log.some(function (l) { return l.sh; });
     h += UI.tabs('match', [['log', live ? '🔴 现场文字直播' : '文字直播'], ['box', '技术统计']].concat(hasShots ? [['shots', '投篮分布']] : []), tab);
     if (tab === 'log') {
@@ -252,12 +252,18 @@
     var S = UI.S;
     var NAMES = { newbie: '新人杯', small: '小杯赛', big: '大杯赛' };
     var DESC = { newbie: '为保护新人设置的杯赛，需持新人杯邀请函，街球等级必须为 1 级。', small: '不同街球等级的球队只能报名属于自己等级的小杯赛。', big: '每个赛季举行两次，不分等级都可报名，奖金丰厚。' };
-    var h = '<p class="tip">街球杯赛在你点击「进入下一天」时进行（单场淘汰），比赛可获得<b>训练点</b>、资金奖励和街球积分。新人杯邀请函：<b>' + S.user.items.newbie + '</b> 张。街球等级：' + S.user.streetLevel + ' 级（积分 ' + S.user.streetPts + (X.STREET_LEVELS[S.user.streetLevel] ? ' / ' + X.STREET_LEVELS[S.user.streetLevel] : '') + '）</p>';
+    var h = '<div class="sumline"><label><input type="checkbox" data-change="autocup"' + (S.user.autoCup ? ' checked' : '') + '> 每天自动报名所有能报的杯赛（新人杯会消耗邀请函）</label></div>';
+    h += '<p class="tip">街球杯赛在你点击「进入下一天」时进行（单场淘汰），比赛可获得<b>训练点</b>、资金奖励和街球积分。新人杯邀请函：<b>' + S.user.items.newbie + '</b> 张。街球等级：' + S.user.streetLevel + ' 级（积分 ' + S.user.streetPts + (X.STREET_LEVELS[S.user.streetLevel] ? ' / ' + X.STREET_LEVELS[S.user.streetLevel] : '') + '）</p>';
     h += '<table class="grid"><tr><th>杯赛</th><th>类型</th><th>参赛队</th><th>对手实力</th><th>冠军奖金</th><th>说明</th><th></th></tr>' + S.cups.map(function (c) {
       return '<tr><td><b>' + esc(c.name) + '</b></td><td>' + NAMES[c.type] + '</td><td>' + c.size + '</td><td>约 ' + Math.round(c.strength) + '</td><td>' + U.money(c.prize[0]) + '</td><td class="small">' + DESC[c.type] + '</td><td>' + (c.registered ? '<span class="tag ok">已报名</span>' : UI.btn('报名', 'cupreg', { id: c.id }, 'sm')) + '</td></tr>';
     }).join('') + '</table>';
     h += '<p class="muted small">你的街球队当前实力（场上三人平均综合）：' + X.Cups.streetPower(S).toFixed(1) + '。注意比赛会消耗体力，体力低于 80 容易受伤。</p>';
     return h;
+  };
+  A.autocup = function (d, el) {
+    var S = UI.S; S.user.autoCup = el.checked;
+    var n = el.checked ? X.Cups.autoRegister(S) : 0;
+    UI.result(null, el.checked ? '已开启自动报名' + (n ? '，今天报名了 ' + n + ' 个杯赛' : '') : '已关闭自动报名');
   };
   A.cupreg = function (d) { UI.result(X.Cups.register(UI.S, d.id), '报名成功！杯赛将在进入下一天时进行'); };
 

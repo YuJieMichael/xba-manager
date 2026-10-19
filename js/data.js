@@ -188,13 +188,17 @@ XBA.TRAIT_TIERS = [{ cn: '', f: 0 }, { cn: '铜', f: 0.5, c: '#b07a3a' }, { cn: 
     { id: 'dunker', cn: '扣篮王', icon: '💥', eff: 0.03, what: '内线进攻（并更容易打出隔人暴扣）', req: [[A('jmp'), 65, '弹跳']], fix: function (p) { return p.h >= 195; }, fixCn: '身高≥195' }
   ];
   XBA.TRAITS.forEach(function (t) {
+    t.margin = function (p) {
+      if (t.fix && !t.fix(p)) return -1;
+      return Math.min.apply(null, t.req.map(function (r) { return r[0](p) - r[1]; }));
+    };
+    // 铜：达标；银：+12；金：+25；名人堂：+40
     t.lv = function (p) {
-      if (t.fix && !t.fix(p)) return 0;
-      var margin = Math.min.apply(null, t.req.map(function (r) { return r[0](p) - r[1]; }));
-      return margin < 0 ? 0 : margin < 10 ? 1 : margin < 20 ? 2 : margin < 30 ? 3 : 4;
+      var mg = t.margin(p);
+      return mg < 0 ? 0 : mg < 12 ? 1 : mg < 25 ? 2 : mg < 40 ? 3 : 4;
     };
     t.ok = function (p) { return t.lv(p) > 0; };
-    t.need = t.req.map(function (r) { return r[2] + '≥' + r[1]; }).join('、') + (t.fixCn ? '、' + t.fixCn : '') + '（每高出 10 点升一级）';
+    t.need = t.req.map(function (r) { return r[2] + '≥' + r[1]; }).join('、') + (t.fixCn ? '、' + t.fixCn : '') + '（高出 12/25/40 点升银/金/名人堂）';
     t.desc = t.what + ' +' + Math.round(t.eff * 50 * 10) / 10 + '%（铜）/ +' + Math.round(t.eff * 100) + '%（银）/ +' + Math.round(t.eff * 150 * 10) / 10 + '%（金）/ +' + Math.round(t.eff * 220) + '%（名人堂）';
   });
 })();

@@ -314,3 +314,28 @@ ol.hl { margin: 0; padding-left: 22px; } ol.hl li { margin: 3px 0; }
 .sk { border: 1px solid #ddd; border-radius: 6px; padding: 6px 8px; background: #fff; } .sk.on { border-color: #4a8fd8; background: #f2f7ff; }
 .sk-n { font-weight: bold; } .sk-l { color: #4a8fd8; letter-spacing: 1px; } .sk .btn { margin-top: 4px; }
 .offer { padding: 4px 0; border-bottom: 1px dotted var(--line); }
+.tpx { background: #f2f7ff; border: 1px dashed #a9c4ea; border-radius: 4px; padding: 5px 8px; margin: 6px 0; font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.tr-tag.tr-off { opacity: .45; text-decoration: line-through; }
+
+/* 表格在框内可横向滚动，不再被裁掉边框 */
+.box-b { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table.grid.box { min-width: 640px; }
+table.grid.box td, table.grid.box th { padding: 2px 4px; }
+.cols2 > div, .tac-wrap > div { min-width: 0; }
+
+/* 手机：顶部更紧凑，「进入下一天」固定在底部方便单手点 */
+@media (max-width: 480px) {
+  header.top { padding: 4px 10px; } .logo { font-size: 16px; letter-spacing: 1px; } .logo small { display: none; }
+  .logo-ball { width: 22px; height: 22px; line-height: 22px; font-size: 14px; }
+  .statusbar { font-size: 11px; line-height: 1.45; padding: 4px 8px; }
+  .st-l { min-width: 0; width: 100%; display: flex; gap: 8px; align-items: baseline; } .st-date { font-size: 13px; }
+  .st-m { min-width: 0; }
+  .st-r { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: rgba(255, 246, 232, .97); border-top: 2px solid var(--line); padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); justify-content: space-between; }
+  .st-r .btn.big { flex: 1; margin-left: 10px; padding: 9px 12px; font-size: 15px; }
+  #app { padding-bottom: 64px; }
+  .tabs { gap: 2px; } .tab { padding: 3px 8px; font-size: 12px; }
+  .btn { padding: 4px 10px; } .btn.sm { padding: 3px 8px; }
+  .scoreboard { gap: 6px; padding: 8px; } .sb-team { font-size: 13px; } .sb-score { font-size: 24px; padding: 4px 8px; }
+  .toast { bottom: 80px; }
+}
+.tr-tag[data-act] { cursor: pointer; } .tr-tag.tr-pin { background: #fff0b8; }

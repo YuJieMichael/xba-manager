@@ -119,7 +119,7 @@
     if (l.fromTeam && S.teams[l.fromTeam]) W().removeFromTeam(S, S.teams[l.fromTeam], p);
     W().addToTeam(S, team, p);
     if (toPro) { p.salary = Math.round(P.salaryFor(p) * X.Manager.salaryMul(S)); p.contract = U.ri(26, 52); p.green = false; p.tp = 0; }
-    else { p.salary = 0; p.contract = 0; p.tp = 10; }
+    else { p.salary = 0; p.contract = 0; }
     p.joined = S.dayNo;
     W().msg(S, '竞拍成功！' + p.name + ' 以 ' + U.money(price) + ' 加盟' + team.name, 'market');
     return true;
@@ -346,7 +346,7 @@
     if (st.playerIds.length >= M.ST_MAX) return '街球队人数已满';
     var np = S.players[pid];
     W().addToTeam(S, st, np);
-    np.tp = 10;
+    S.user.streetTP = (S.user.streetTP || 0) + 10;
     np.scoutGrade = M.GRADES.indexOf(M.scoutGrade(np));
     var g = M.GRADES[np.scoutGrade];
     W().msg(S, '球探签约：' + np.name + ' 加入街球队，球探潜力评价【' + g.cn + '·' + g.name + '】', 'player');

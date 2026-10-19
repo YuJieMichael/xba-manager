@@ -81,7 +81,7 @@
       p._st = cfg.noStamina ? 100 : p.st;
       p._out = false; p._pf = 0; p._sec = 0;
       p._morale = cfg.morale || 1;
-      p._tr = {}; X.TRAITS.forEach(function (t) { var lv = t.lv(p); if (lv) p._tr[t.id] = lv; });
+      p._tr = {}; P.activeTraits(p).forEach(function (x) { p._tr[x.t.id] = x.lv; });
       side.box[p.id] = { pid: p.id, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0, zn: {} };
     });
     return side;

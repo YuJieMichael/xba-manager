@@ -103,7 +103,7 @@
     { id: 'red', cn: '慧眼识珠', desc: '球探签下一名红色天才', coins: 30, ok: function (S) { return allMine(S).some(function (p) { return p.scoutGrade === 3; }); } },
     { id: 'green', cn: '本土培养', desc: '用选拔卡提拔第一名绿名球员', coins: 20, ok: function (S) { return proPlayers(S).some(function (p) { return p.green; }); } },
     { id: 'trait', cn: '特长初现', desc: '你的球员解锁第一个特长', coins: 20, ok: function (S) { return allMine(S).some(function (p) { return P.traits(p).length >= 1; }); } },
-    { id: 'trait4', cn: '全能战士', desc: '一名球员同时拥有 4 个特长', coins: 80, ok: function (S) { return allMine(S).some(function (p) { return P.traits(p).length >= 4; }); } },
+    { id: 'trait4', cn: '全能战士', desc: '一名球员同时拥有 4 个特长', coins: 80, ok: function (S) { return allMine(S).some(function (p) { return P.allTraits(p).length >= 4; }); } },
     { id: 'mvp', cn: '最有价值球员', desc: '你的球员获得赛季 MVP', coins: 80, ok: function (S) { return allMine(S).some(function (p) { return (p.awards || []).some(function (a) { return /MVP$/.test(a); }); }); } },
     { id: 'fans1', cn: '小有名气', desc: '球迷达到 1 万', coins: 30, ok: function (S) { return W().userPro(S).fans >= 10000; } },
     { id: 'fans5', cn: '万人迷', desc: '球迷达到 5 万', coins: 100, ok: function (S) { return W().userPro(S).fans >= 50000; } },

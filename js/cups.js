@@ -49,7 +49,7 @@
       if (tpOn) {
         // 训练点按上场时间和表现分配：主力拿大头，没上场的替补只有 1 点
         var tp = b.min > 0 ? Math.round((b.min / 2 + Math.max(0, b.eff) * 0.6) * dbl * X.Manager.tpMul(S)) : dbl;
-        p.tp += tp; gained[p.id] = tp;
+        S.user.streetTP = (S.user.streetTP || 0) + tp; gained[p.id] = tp;
         p.mood = Math.max(0, p.mood - 2);
       }
     });
@@ -131,6 +131,14 @@
     if (!has('small')) keep.push({ id: U.uid(S, 'c'), type: 'small', name: lv + '级小杯赛', size: 8, strength: 14 + lv * 4, prize: [40000 * lv, 20000 * lv, 10000 * lv, 4000 * lv] });
     if ((S.day === 6 || S.day === 20) && !has('big')) keep.push({ id: U.uid(S, 'c'), type: 'big', name: '第' + S.season + '赛季大杯赛（' + (S.day === 6 ? '上' : '下') + '）', size: 16, strength: Math.max(28, pw + 4), prize: [600000, 300000, 120000, 50000, 20000] });
     S.cups = keep;
+    C.autoRegister(S);
+  };
+  // 勾选自动报名后：每天把能报的杯赛都报上
+  C.autoRegister = function (S) {
+    if (!S.user.autoCup) return 0;
+    var n = 0;
+    S.cups.forEach(function (c) { if (!c.registered && !C.register(S, c.id)) n++; });
+    return n;
   };
 
   C.register = function (S, cid) {

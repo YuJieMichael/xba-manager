@@ -43,12 +43,13 @@
   };
   UI.traitIcons = function (p) {
     if (!p || !p.a) return '';
-    var ts = X.TRAITS.filter(function (t) { return t.ok(p); });
+    var ts = P.activeTraits(p).map(function (x) { return x.t; });
     return ts.length ? '<span class="tr-ic" title="' + ts.map(function (t) { return t.cn; }).join('、') + '">' + ts.map(function (t) { return t.icon; }).join('') + '</span>' : '';
   };
   UI.traitTags = function (p) {
-    var ts = X.TRAITS.filter(function (t) { return t.ok(p); });
-    return ts.length ? '<div class="tr-tags">' + ts.map(function (t) { var tier = X.TRAIT_TIERS[t.lv(p)]; return '<span class="tr-tag" style="border-color:' + tier.c + '" title="' + t.desc + '">' + t.icon + t.cn + '<b style="color:' + tier.c + '">·' + tier.cn + '</b></span>'; }).join('') + '</div>' : '';
+    var all = P.allTraits(p), slots = P.traitSlots(p), act = P.traits(p), mine = p.teamId && UI.S.teams[p.teamId] && UI.S.teams[p.teamId].isUser;
+    var ts = all.map(function (x) { return x.t; }).sort(function (a, b) { return (act.indexOf(a.id) < 0) - (act.indexOf(b.id) < 0); });
+    return ts.length ? '<div class="tr-tags"><span class="small muted">徽章 ' + Math.min(slots, all.length) + '/' + slots + '：</span>' + ts.map(function (t, i) { var tier = X.TRAIT_TIERS[t.lv(p)]; var off = act.indexOf(t.id) < 0; var pin = (p.badges || []).indexOf(t.id) >= 0; return '<span class="tr-tag' + (off ? ' tr-off' : '') + (pin ? ' tr-pin' : '') + '"' + (mine ? ' data-act="badgepin" data-pid="' + p.id + '" data-id="' + t.id + '"' : '') + ' style="border-color:' + tier.c + '" title="' + (off ? '徽章槽已满，未生效。' : '') + t.desc + '">' + t.icon + t.cn + '<b style="color:' + tier.c + '">·' + tier.cn + '</b>' + (off ? '（未生效）' : '') + (pin ? '📌' : '') + '</span>'; }).join('') + (mine && all.length > slots ? '<div class="small muted">点徽章可以手动佩戴（📌），其余空槽按等级自动补</div>' : '') + '</div>' : '';
   };
   UI.starBadge = function (p) { return p && p.star ? '<span class="pstar" title="升星 ' + p.star + ' 星">' + p.star + '★</span>' : ''; };
   UI.teamLink = function (t) {
@@ -107,7 +108,7 @@
     var h = '<div class="card"><span class="card-x" data-act="closecard">✕ 关闭</span><div class="card-top">' + UI.avatar(p, t ? t.color : '#888', 64) +
       '<div class="card-info"><div class="card-name' + (p.green ? ' green' : '') + '">' + esc(p.name) + '</div>' +
       '<div>年龄 <b title="生日：每赛季第 ' + p.bday + ' 轮">' + p.age + '</b> [' + p.bday + ']</div>' +
-      (street ? '<div>训练点 <b>' + p.tp + '</b></div>' : '<div>薪水 <b>' + U.money(p.salary) + '</b></div>') +
+      (street ? '' : '<div>薪水 <b>' + U.money(p.salary) + '</b></div>') +
       '<div>位置 <b>' + p.pos + '</b> 号码 <b>' + p.num + '</b></div>' +
       '<div>身高 ' + p.h + 'CM</div><div>体重 ' + p.w + 'KG</div>' +
       '<div>体力 ' + UI.stam(p.st) + (street ? ' 心情 ' + UI.stam(p.mood) : '') + '</div>' +
@@ -330,6 +331,14 @@
   UI.acts.selp = function (d) { UI.sel = d.pid; UI.renderCard(); document.body.classList.add('card-open'); };
   UI.acts.closecard = function () { document.body.classList.remove('card-open'); };
   UI.acts.closemodal = function () { UI.closeModal(); };
+  UI.acts.badgepin = function (d) {
+    var p = UI.S.players[d.pid]; if (!p) return;
+    p.badges = p.badges || [];
+    var i = p.badges.indexOf(d.id);
+    if (i >= 0) p.badges.splice(i, 1);
+    else { if (p.badges.length >= P.traitSlots(p)) return UI.toast('徽章槽已满（' + P.traitSlots(p) + ' 个），先取消一个', true); p.badges.push(d.id); }
+    UI.persist(); UI.renderCard();
+  };
 
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-act]');

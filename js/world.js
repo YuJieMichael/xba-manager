@@ -179,7 +179,7 @@
       user: {
         manager: manager || '经理', proId: null, streetId: null, money: 500000, coins: 50, streetLevel: 1, streetPts: 0,
         items: { double: 1, physio: 2, scout: 1, reset: 0, hidden: 3, newbie: 20, fund: 0 }, selectCards: 0, proSeasons: 0,
-        watch: [], proTP: 0, doubleUntil: 0, doubleAuto: false, wk: null, wkDay: -1, wkPts: 0, ledger: {}, trophies: [], onboarded: false, member: true
+        watch: [], proTP: 0, streetTP: 0, autoCup: false, doubleUntil: 0, doubleAuto: false, wk: null, wkDay: -1, wkPts: 0, ledger: {}, trophies: [], onboarded: false, member: true
       }
     };
     // 联赛金字塔
@@ -234,7 +234,8 @@
     st.name = info.streetName || (info.teamName + '街球队'); st.color = info.color;
     S.user.manager = info.manager || S.user.manager;
     info.pro.forEach(function (id) { var p = S.players[id]; W.addToTeam(S, pro, p); p.salary = P.salaryFor(p); p.contract = U.ri(26, 52); p.joined = -1; });
-    info.street.forEach(function (id) { var p = S.players[id]; W.addToTeam(S, st, p); p.tp = 20; p.joined = -1; });
+    info.street.forEach(function (id) { var p = S.players[id]; W.addToTeam(S, st, p); p.joined = -1; });
+    S.user.streetTP = 80;
     // 系统赠送的街球员（一般较差）凑满 4 人
     while (st.playerIds.length < 4) { var g = P.gen(S, { age: U.ri(15, 18), ovr: U.rf(12, 18), street: true }); W.addToTeam(S, st, g); }
     // 删除没选中的候选

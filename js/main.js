@@ -15,6 +15,8 @@
       if (!S.xcup && S.day <= 1) X.XCup.setup(S, true);
       if (!S.user.goals || S.user.goals.season !== S.season) X.Goals.newSeason(S);
       X.Alliance.init(S);
+      // 街球训练点改为全队共用
+      if (S.user.streetTP == null) { S.user.streetTP = 0; Object.keys(S.players).forEach(function (id) { var p = S.players[id]; if (p.tp) { S.user.streetTP += p.tp; p.tp = 0; } }); }
       Object.keys(S.players).forEach(function (id) { X.P.persona(S.players[id]); });
     }
   }

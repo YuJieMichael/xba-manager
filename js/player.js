@@ -116,10 +116,21 @@
     return p;
   };
 
-  P.traits = function (p) {
-    return X.TRAITS.filter(function (t) { return t.ok(p); }).map(function (t) { return t.id; });
+  // 徽章槽：只有等级最高的几个特长生效（3 个，每 2 星 +1，最多 5 个）
+  P.traitSlots = function (p) { return Math.min(5, 3 + Math.floor((p.star || 0) / 2)); };
+  P.allTraits = function (p) {
+    return X.TRAITS.map(function (t) { return { t: t, lv: t.lv(p), mg: t.margin(p) }; }).filter(function (x) { return x.lv > 0; })
+      .sort(function (a, b) { return b.lv - a.lv || b.mg - a.mg; });
   };
-  P.hasTrait = function (p, id) { return X.TRAITS.some(function (t) { return t.id === id && t.ok(p); }); };
+  // 手动佩戴的徽章（p.badges）优先，空槽再按等级自动补上
+  P.activeTraits = function (p) {
+    var all = P.allTraits(p), pin = p.badges || [];
+    var pinned = all.filter(function (x) { return pin.indexOf(x.t.id) >= 0; });
+    var rest = all.filter(function (x) { return pin.indexOf(x.t.id) < 0; });
+    return pinned.concat(rest).slice(0, P.traitSlots(p));
+  };
+  P.traits = function (p) { return P.activeTraits(p).map(function (x) { return x.t.id; }); };
+  P.hasTrait = function (p, id) { return P.traits(p).indexOf(id) >= 0; };
 
   P.rollPersona = function () { return X.PERSONAS[U.wpick(X.PERSONAS.map(function (x) { return x.w; }))].id; };
   P.persona = function (p) { if (!p.persona) p.persona = P.rollPersona(); return X.PERSONAS.find(function (x) { return x.id === p.persona; }) || X.PERSONAS[0]; };
@@ -163,7 +174,7 @@
   P.streetTrain = function (S, p, k, trainer) {
     var tl = trainer ? X.Staff.effLevel(trainer) : 0;
     var cost = Math.max(5, Math.round(10 * (1 - 0.045 * tl)));
-    if (p.tp < cost) return { gain: 0, cost: 0, msg: '训练点不足（需要' + cost + '）' };
+    if ((S.user.streetTP || 0) < cost) return { gain: 0, cost: 0, msg: '街球训练点不足（需要' + cost + '）' };
     if (p.inj > 0) return { gain: 0, cost: 0, msg: p.name + ' 正在养伤，不能训练' };
     if (p.st < 30) return { gain: 0, cost: 0, msg: p.name + ' 体力太低，不能训练' };
     var gf = gapF(p, k);
@@ -171,7 +182,7 @@
     var moodF = 0.6 + 0.4 * p.mood / 100;
     var gain = Math.min(3, U.rf(0.8, 3) * gf * moodF * (1 + tl * 0.02) * P.trainMul(p));
     gain = Math.min(gain, p.m[k] - p.a[k]);
-    p.a[k] += gain; p.tp -= cost;
+    p.a[k] += gain; S.user.streetTP -= cost;
     p.st = Math.max(0, p.st - 1); p.mood = Math.max(0, p.mood - 1);
     var extra = '';
     // 年轻球员：训练员可能提高潜力（与切合度有关）

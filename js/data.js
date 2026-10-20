@@ -92,6 +92,14 @@ XBA.LEVELS = [
   { level: 4, leagues: 8, cap: 95000, avg: 32, prize: [1000000, 500000, 250000] }
 ];
 XBA.LEAGUE_TEAMS = 14;
+// 难度：avg = AI 实力偏移；money/budget = 开局资金倍率；train = 你的训练效果；aiGrow = AI 每日成长几率；sync = AI 跟着你一起变强
+XBA.DIFFS = {
+  easy: { cn: '简单', avg: -3, money: 1.5, budget: 1.2, train: 1.2, aiGrow: 0.12, desc: 'AI 偏弱、开局钱多、训练更快' },
+  normal: { cn: '普通', avg: 0, money: 1, budget: 1, train: 1, aiGrow: 0.2, desc: '标准体验' },
+  hard: { cn: '困难', avg: 3, money: 0.8, budget: 0.9, train: 0.9, aiGrow: 0.28, desc: 'AI 更强、成长更快，开局更穷' },
+  hell: { cn: '地狱', avg: 5, money: 0.7, budget: 0.85, train: 0.9, aiGrow: 0.32, sync: true, desc: 'AI 和你同步成长：你越强，整个联盟跟着越强' }
+};
+XBA.DIFF_ORDER = ['easy', 'normal', 'hard', 'hell'];
 XBA.ROUNDS = 26;
 XBA.SEASON_DAYS = 28; // 26 轮 + 赛季中休息日 + 赛季末休息日
 

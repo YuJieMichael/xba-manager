@@ -100,8 +100,9 @@
     X.ATTRS.forEach(function (k) { p.a[k] *= scale; });
     X.ATTRS.forEach(function (k, i) {
       var g = gapBase * U.rf(0.3, 1.5) * (ranks[i] <= 3 ? 1.1 : 0.9);
-      p.a[k] = U.clamp(p.a[k], 3, 95);
-      p.m[k] = U.clamp(p.a[k] + g, p.a[k], X.GEN_CAP);
+      var hiCap = target > 70 ? Math.min(X.ATTR_CAP, target * 1.4) : 95;
+      p.a[k] = U.clamp(p.a[k], 3, hiCap);
+      p.m[k] = U.clamp(p.a[k] + g, p.a[k], Math.max(X.GEN_CAP, Math.min(X.ATTR_CAP, hiCap + 5)));
     });
     var avgIQ = (p.iq.off + p.iq.def + p.iq.team) / 3;
     var o = P.ovr(p);
@@ -180,7 +181,7 @@
     var gf = gapF(p, k);
     if (gf === 0) return { gain: 0, cost: 0, msg: X.ATTR_CN[k] + ' 已达到潜力上限' };
     var moodF = 0.6 + 0.4 * p.mood / 100;
-    var gain = Math.min(3, U.rf(0.8, 3) * gf * moodF * (1 + tl * 0.02) * P.trainMul(p));
+    var gain = Math.min(3, U.rf(0.8, 3) * gf * moodF * (1 + tl * 0.02) * P.trainMul(p) * X.World.userTrainMul(S, p));
     gain = Math.min(gain, p.m[k] - p.a[k]);
     p.a[k] += gain; S.user.streetTP -= cost;
     p.st = Math.max(0, p.st - 1); p.mood = Math.max(0, p.mood - 1);
@@ -209,7 +210,7 @@
     var gf = gapF(p, k);
     if (gf === 0) return { gain: 0, cost: 0, msg: X.ATTR_CN[k] + ' 已达到潜力上限' };
     var ageF = p.age <= 24 ? 1 : p.age <= 28 ? 0.85 : p.age <= 31 ? 0.65 : 0.45;
-    var gain = Math.min(3, U.rf(0.8, 3) * Math.max(0.4, gf) * ageF * (1 + tl * 0.02) * P.trainMul(p));
+    var gain = Math.min(3, U.rf(0.8, 3) * Math.max(0.4, gf) * ageF * (1 + tl * 0.02) * P.trainMul(p) * X.World.userTrainMul(S, p));
     gain = Math.min(gain, p.m[k] - p.a[k]);
     p.a[k] += gain; S.user.proTP -= cost;
     p.st = Math.max(0, p.st - 1);
@@ -252,7 +253,7 @@
     if (k === 'rest') return 0;
     var tl = trainer ? X.Staff.effLevel(trainer) : 0;
     var ageF = p.age <= 22 ? 1.3 : p.age <= 25 ? 1.1 : p.age <= 28 ? 0.9 : p.age <= 31 ? 0.6 : 0.35;
-    var gf = gapF(p, k); var gain = U.rf(0.8, 1.6) * (gf > 0 ? Math.max(0.4, gf) : 0) * ageF * (1 + tl * 0.07) * (0.7 + 0.3 * P.staminaF(p.st)) * P.trainMul(p);
+    var gf = gapF(p, k); var gain = U.rf(0.8, 1.6) * (gf > 0 ? Math.max(0.4, gf) : 0) * ageF * (1 + tl * 0.07) * (0.7 + 0.3 * P.staminaF(p.st)) * P.trainMul(p) * X.World.userTrainMul(S, p);
     gain = Math.min(gain, Math.max(0, p.m[k] - p.a[k]));
     p.a[k] += gain;
     p.st = Math.max(0, p.st - 4);

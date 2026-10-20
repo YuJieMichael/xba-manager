@@ -37,6 +37,7 @@
     if (isUser && X.Coach.autoOn(S)) X.Coach.prepare(S, 'league', h.isUser ? a.id : h.id);
     var res = W().preResult(S, h, a) || E.play(W().sideCfg(S, h, 'league', { home: true }), W().sideCfg(S, a, 'league'), { kind: 'pro', log: isUser, injuries: true });
     W().applyMatch(S, res, { support: true });
+    X.Records.game(S, res, h, a);
     var g = { h: home, a: away, hs: res.hs, as: res.as };
     if (isUser) {
       var stage = PO.STAGES[s.stage || 0];

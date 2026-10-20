@@ -9,6 +9,16 @@
   var BRANDS = ['耐克', '阿迪达斯', '李宁', '安踏', '匹克', '特步', '361°', '可口可乐', '百事可乐', '红牛', '佳得乐', '王老吉', '蒙牛', '伊利', '青岛啤酒', '雪花啤酒', '中国移动', '联想', '海尔', '格力', '美的', '长虹', '康师傅', '统一', '娃哈哈', '农夫山泉', '肯德基', '麦当劳', '必胜客', '腾讯QQ', '网易', '新浪', '盛大', '九城', '巨人网络', '金山', '步步高', '诺基亚', '摩托罗拉', '三星', '索尼', '飞利浦'];
 
   W.levelInfo = function (lv) { return X.LEVELS[lv - 1]; };
+  W.diff = function (S) { return X.DIFFS[S.difficulty || 'normal'] || X.DIFFS.normal; };
+  // 各级别 AI 平均实力：基础值 + 难度偏移 + 每次重生 +2 + 地狱难度的同步加成
+  W.levelAvg = function (S, lv) { return X.LEVELS[lv - 1].avg + W.diff(S).avg + 2 * (S.rebirths || 0) + (S.syncBoost || 0); };
+  W.userTrainMul = function (S, p) {
+    var t = p && p.teamId && S.teams[p.teamId];
+    if (!t || !t.isUser) return 1;
+    var m = W.diff(S).train;
+    ((S.user.legacy && S.user.legacy.bonuses) || []).forEach(function (b) { if (b === 'train') m *= 1.1; });
+    return m;
+  };
   W.userPro = function (S) { return S.teams[S.user.proId]; };
   W.userStreet = function (S) { return S.teams[S.user.streetId]; };
   W.teamPlayers = function (S, t) { return t.playerIds.map(function (id) { return S.players[id]; }).filter(Boolean); };
@@ -126,7 +136,7 @@
   };
 
   function genAIPlayers(S, team, level, strength) {
-    var avg = W.levelInfo(level).avg + strength;
+    var avg = W.levelAvg(S, level) + strength;
     var pos = ['C', 'C', 'PF', 'PF', 'SF', 'SF', 'SG', 'SG', 'PG', 'PG', U.pick(X.POS)];
     pos.forEach(function (ps, i) {
       var starter = i % 2 === 0;
@@ -172,12 +182,14 @@
   };
 
   // ===== 新游戏 =====
-  W.newGame = function (manager) {
+  W.newGame = function (manager, opts) {
+    opts = opts || {};
     var S = {
+      difficulty: opts.difficulty || 'normal', rebirths: opts.rebirths || 0, syncBoost: 0,
       version: 1, nextId: 1, dayNo: 0, season: 1, day: 0, players: {}, teams: {}, leagues: [], usedNames: {},
       msgs: [], market: [], staffPool: [], cups: [], matches: {}, myMatches: [], draft: null, history: [], adOffers: [], awards: {}, hof: [], xcup: null, xcupInvites: null,
       user: {
-        manager: manager || '经理', proId: null, streetId: null, money: 500000, coins: 50, streetLevel: 1, streetPts: 0,
+        manager: manager || '经理', proId: null, streetId: null, money: Math.round(500000 * X.DIFFS[opts.difficulty || 'normal'].money), coins: 50, streetLevel: 1, streetPts: 0,
         items: { double: 1, physio: 2, scout: 1, reset: 0, hidden: 3, newbie: 20, fund: 0 }, selectCards: 0, proSeasons: 0,
         watch: [], proTP: 0, streetTP: 0, autoCup: false, doubleUntil: 0, doubleAuto: false, wk: null, wkDay: -1, wkPts: 0, ledger: {}, trophies: [], onboarded: false, member: true
       }
@@ -210,7 +222,8 @@
     S.leagues.forEach(function (lg) { lg.schedule = W.genSchedule(lg.teamIds); lg.results = []; });
     X.Staff.refreshPool(S);
     // 新手选人候选
-    var cand = { pro: [], street: [], proBudget: 1600000, streetBudget: 600000 };
+    var bud = W.diff(S).budget;
+    var cand = { pro: [], street: [], proBudget: Math.round(1600000 * bud), streetBudget: Math.round(600000 * bud) };
     var pos = ['C', 'C', 'C', 'PF', 'PF', 'PF', 'PF', 'SF', 'SF', 'SF', 'SF', 'SG', 'SG', 'SG', 'SG', 'PG', 'PG', 'PG', 'PG', 'C', 'PF', 'SF', 'SG', 'PG'];
     pos.forEach(function (ps) {
       var p = P.gen(S, { pos: ps, age: U.ri(19, 31), ovr: U.rf(28, 40) });
@@ -247,6 +260,7 @@
     S.user.onboarded = true;
     X.XCup.setup(S, true);
     X.Alliance.init(S);
+    applyLegacy(S);
     X.Goals.newSeason(S);
     X.Cups.daily(S);
     var lg = W.league(S, pro.leagueId);
@@ -351,6 +365,7 @@
       var isUser = h.isUser || a.isUser;
       var res = W.preResult(S, h, a) || E.play(W.sideCfg(S, h, 'league', { home: true }), W.sideCfg(S, a, 'league'), { kind: 'pro', log: isUser, injuries: true });
       W.applyMatch(S, res, { stats: true, support: true });
+      X.Records.leagueGame(S, res, h, a);
       W.addProf(h, res.used.h, S); W.addProf(a, res.used.a, S);
       h.rec.pf += res.hs; h.rec.pa += res.as; a.rec.pf += res.as; a.rec.pa += res.hs;
       if (res.hs > res.as) { h.rec.w++; a.rec.l++; } else { a.rec.w++; h.rec.l++; }
@@ -386,7 +401,7 @@
   W.userGameFinance = function (S, team, home, res, oppId) { return userGameFinance(S, team, home, res, oppId); };
   function userGameFinance(S, team, home, res, oppId) {
     var my = home ? res.hs : res.as, op = home ? res.as : res.hs, won = my > op, margin = my - op;
-    var rival = oppId && X.Rivals.isRival(S, oppId), rm = rival ? 1.5 : 1, hm = 1 + 0.05 * X.Manager.lv(S, 'home');
+    var rival = oppId && X.Rivals.isRival(S, oppId), rm = rival ? 1.5 : 1, hm = (1 + 0.05 * X.Manager.lv(S, 'home')) * Math.pow(1.1, W.legacyCount(S, 'ticket'));
     if (home && !(res.forfeit && res.forfeit.pre)) {
       var att = W.attendance(S, team);
       team.lastAtt = att;
@@ -553,7 +568,7 @@
       var t = S.teams[tid];
       if (t.isUser || t.kind !== 'pro') return;
       W.teamPlayers(S, t).forEach(function (p) {
-        if (U.chance(0.2)) P.aiGrow(p, 1);
+        if (U.chance(W.diff(S).aiGrow)) P.aiGrow(p, 1);
         p.st = Math.min(100, p.st + 40);
       });
       if (round && round % 7 === 0) W.refreshAITactics(S, t);
@@ -569,7 +584,7 @@
 
     // 6. 赛季末
     var seasonEnded = false;
-    if (S.day === X.SEASON_END) { W.seasonEnd(S, out); seasonEnded = true; }
+    if (S.day === X.SEASON_END) { X.Legend.run(S, out); W.seasonEnd(S, out); seasonEnded = true; }
 
     S.dayNo += 1;
     if (seasonEnded) { S.day = 0; }
@@ -627,6 +642,7 @@
       summary.champions.push({ league: lg.name, team: champ.name, isUser: !!champ.isUser });
     });
     X.Awards.season(S);
+    X.Records.season(S, summary.champions[0] && summary.champions[0].team, summary.champions[0] && summary.champions[0].isUser);
     var xc = S.xcup;
     if (xc && xc.ko.champ && xc.ko.champ.champion && S.teams[xc.ko.champ.champion]) summary.xcup = S.teams[xc.ko.champ.champion].name;
     S.history.unshift(summary);
@@ -676,16 +692,35 @@
     });
     Object.keys(S.teams).forEach(function (tid) { S.teams[tid].rec = { w: 0, l: 0, pf: 0, pa: 0 }; });
 
+    // 地狱难度：整个联盟跟着你的实力一起涨
+    if (W.diff(S).sync) {
+      var top8u = W.teamPlayers(S, user).map(function (p) { return P.ovr(p); }).sort(function (a, b) { return b - a; }).slice(0, 8);
+      var base = X.LEVELS[user.level - 1].avg + W.diff(S).avg + 2 * (S.rebirths || 0);
+      var nb = Math.max(0, (U.avg(top8u) - base) * 0.85);
+      if (nb > (S.syncBoost || 0) + 0.5) W.msg(S, '😈 地狱难度：联盟各队察觉到你的强大，整体实力提升了 ' + U.r1(nb - (S.syncBoost || 0)) + ' 点', 'sys');
+      S.syncBoost = nb;
+      Object.keys(S.teams).forEach(function (tid) {
+        var t = S.teams[tid];
+        if (t.isUser || t.kind !== 'pro') return;
+        var target = W.levelAvg(S, t.level) + (t.strength || 0);
+        W.teamPlayers(S, t).forEach(function (p) {
+          var gap = target - P.ovr(p);
+          if (gap > 0) X.ATTRS.forEach(function (k) { p.m[k] = Math.min(X.ATTR_CAP, p.m[k] + Math.min(12, gap * 0.6)); p.a[k] = Math.min(p.m[k], p.a[k] + Math.min(6, gap * 0.3)); });
+        });
+      });
+    }
+
     // AI 补充球员
     Object.keys(S.teams).forEach(function (tid) {
       var t = S.teams[tid];
       if (t.isUser || t.kind !== 'pro') return;
       var ps = W.teamPlayers(S, t);
-      var avg = W.levelInfo(t.level).avg + (t.strength || 0);
-      // 太弱的球员换掉，保持本级别实力
+      var avg = W.levelAvg(S, t.level) + (t.strength || 0);
+      // 太弱的球员换掉，保持本级别实力（地狱难度一次最多换 3 个）
       ps.sort(function (a, b) { return P.ovr(a) - P.ovr(b); });
       var top8 = ps.slice(-8).map(function (p) { return P.ovr(p); });
-      if (U.avg(top8) < avg - 2 && ps.length) { W.deletePlayer(S, ps[0]); }
+      var nDel = W.diff(S).sync ? 3 : 1;
+      if (U.avg(top8) < avg - 2 && ps.length) { for (var di = 0; di < nDel && ps.length > 8; di++) W.deletePlayer(S, ps[di]); }
       else if (U.avg(top8) > avg + 4 && ps.length > 9) {
         // 太强：头牌被挖走（转会到更高级别）
         var star = ps[ps.length - 1];
@@ -702,7 +737,7 @@
     Object.keys(S.teams).forEach(function (tid) {
       var t = S.teams[tid];
       if (t.isUser || t.kind !== 'pro') return;
-      var avg = W.levelInfo(t.level).avg + (t.strength || 0);
+      var avg = W.levelAvg(S, t.level) + (t.strength || 0);
       while (t.playerIds.length < 11) {
         var counts = {}; X.POS.forEach(function (p) { counts[p] = 0; });
         W.teamPlayers(S, t).forEach(function (p) { counts[p.pos]++; });
@@ -760,6 +795,44 @@
     });
     // 升降级的 AI 球队实力按新级别平滑调整
     moves.forEach(function (mv) { if (!mv.t.isUser) mv.t.fans = Math.round((mv.t.fans + FANS_BASE[mv.to]) / 2); });
+  }
+
+  // ===== 重生（二周目）=====
+  W.BONUSES = {
+    train: { cn: '训练效果 +10%' }, tp: { cn: '训练点获得 +10%' }, ticket: { cn: '门票收入 +10%' },
+    money: { cn: '每次开局多 100 万资金' }, skill: { cn: '立刻获得 2 个经理技能点' }
+  };
+  W.canRebirth = function (S) { return S.user.trophies.some(function (t) { return /^XBA 超级联赛 冠军$/.test(t.name); }); };
+  W.legacyCount = function (S, b) { return ((S.user.legacy && S.user.legacy.bonuses) || []).filter(function (x) { return x === b; }).length; };
+  W.rebirth = function (S, hofPid, bonus) {
+    var lg = JSON.parse(JSON.stringify(S.user.legacy || { count: 0, bonuses: [], legends: [] }));
+    lg.count++; lg.bonuses.push(bonus);
+    var h = (S.hof || []).find(function (x) { return x.pid === hofPid; });
+    if (h) lg.legends.push(h);
+    var idx = X.DIFF_ORDER.indexOf(S.difficulty || 'normal');
+    var S2 = W.newGame(S.user.manager, { difficulty: X.DIFF_ORDER[Math.min(3, idx + 1)], rebirths: lg.count });
+    S2.user.legacy = lg;
+    S2.user.mgr = S.user.mgr; S2.user.ach = S.user.ach; S2.user.coins = S.user.coins;
+    S2.user.trophies = S.user.trophies.concat([{ season: S.season, name: '第 ' + lg.count + ' 次重生' }]);
+    S2.hof = S.hof; S2.records = S.records; S2.titleCount = S.titleCount;
+    S2.history = (S.history || []).map(function (x) { var y = JSON.parse(JSON.stringify(x)); y.era = lg.count; return y; });
+    if (bonus === 'skill') X.Manager.get(S2).pts += 2;
+    return S2;
+  };
+  // 新档开局时应用重生加成（在 finishOnboard 里调用）
+  function applyLegacy(S) {
+    var lg = S.user.legacy; if (!lg) return;
+    var extra = W.legacyCount(S, 'money') * 1000000;
+    if (extra) W.earn(S, extra, '重生加成：开局资金');
+    var last = lg.legends[lg.legends.length - 1];
+    lg.legends.forEach(function (h) {
+      var level = Math.max(3, Math.min(10, Math.round(h.peak / 10)));
+      var s = { id: U.uid(S, 's'), type: 'trainer', level: level, eff: Math.min(10, level + 1), legend: true, name: h.name + '（传奇）', age: h.age + 5, salary: 0, contract: 9999, teamId: null, slot: null };
+      if (h === last) { var pro = W.userPro(S); s.teamId = pro.id; pro.staff.trainer = s; }
+      else { s.salary = Math.round(600 * Math.pow(level, 1.6) / 20) * 10; s.contract = 40; S.staffPool.unshift(s); }
+    });
+    if (last) W.msg(S, '🎖 传奇 ' + last.name + ' 随你重生，成为职业队的终身训练员（' + Math.min(10, Math.round(last.peak / 10)) + ' 级，不要工资）', 'staff');
+    W.msg(S, '🔁 第 ' + lg.count + ' 次重生：难度「' + W.diff(S).cn + '」，永久加成：' + lg.bonuses.map(function (b) { return W.BONUSES[b].cn; }).join('、'), 'sys');
   }
 
   // ===== 用户操作 =====

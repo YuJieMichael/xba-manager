@@ -339,3 +339,7 @@ table.grid.box td, table.grid.box th { padding: 2px 4px; }
   .toast { bottom: 80px; }
 }
 .tr-tag[data-act] { cursor: pointer; } .tr-tag.tr-pin { background: #fff0b8; }
+.diffs { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.diff-c { border: 2px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; cursor: pointer; }
+.diff-c:hover { background: #fff0d6; border-color: var(--red); } .diff-c b { display: block; font-size: 16px; color: var(--red); } .diff-c span { font-size: 12px; color: var(--muted); }
+.tag.diff-easy { background: #d9f2d0; color: #2e7d2e; } .tag.diff-hard { background: #ffd8b0; color: #a0520a; } .tag.diff-hell { background: #3b0a0a; color: #ff6b6b; }

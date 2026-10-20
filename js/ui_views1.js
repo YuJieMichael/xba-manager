@@ -12,7 +12,7 @@
       ['球队命名', '挑选职业队', '挑选街球队', '领取资格证'].map(function (s, i) { return '<span class="' + (ob.step === i + 1 ? 'on' : ob.step > i + 1 ? 'done' : '') + '">' + (i + 1) + '. ' + s + '</span>'; }).join('') + '</div>';
     if (!S) {
       h += '<div class="box"><div class="box-h">新手学堂</div><div class="box-b"><p>欢迎来到 XBA！这是 2006 年网页游戏《XBA篮球经理》的单机复刻版，其他球队由 AI 经理运营。</p>' +
-        '<p>' + UI.btn('开始新游戏', 'obnew', {}, 'big') + '</p><p class="muted">已有存档？到「存档设置」可导入；或刷新页面自动读取浏览器中的存档。</p>' +
+        '<p><b>选择难度开始新游戏：</b></p><div class="diffs">' + X.DIFF_ORDER.map(function (k) { var d = X.DIFFS[k]; return '<div class="diff-c" data-act="obnew" data-diff="' + k + '"><b>' + d.cn + '</b><span>' + d.desc + '</span></div>'; }).join('') + '</div><p class="muted">已有存档？到「存档设置」可导入；或刷新页面自动读取浏览器中的存档。</p>' +
         '<p>' + UI.btn('导入存档文件', 'importsave') + '</p></div></div></div>';
       return h;
     }
@@ -47,9 +47,9 @@
     }
     return h + '</div>';
   };
-  A.obnew = function () {
+  A.obnew = function (d) {
     var name = '经理';
-    UI.S = W().newGame(name);
+    UI.S = W().newGame(name, { difficulty: (d && d.diff) || 'normal' });
     UI.ob = { step: 1, manager: '', teamName: '', color: '#c8102e', pro: {}, street: {} };
     UI.render();
   };

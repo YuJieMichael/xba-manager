@@ -25,7 +25,7 @@
   function userLevel(S) { return W().userPro(S).level; }
 
   M.daily = function (S) {
-    var lv = userLevel(S), avg = X.LEVELS[lv - 1].avg;
+    var lv = userLevel(S), avg = W().levelAvg(S, lv);
     var cnt = function (mk) { return S.market.filter(function (l) { return l.mk === mk; }).length; };
     // 街头自由球员（进入街球队）
     while (cnt('free') < 12) {

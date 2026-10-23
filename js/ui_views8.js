@@ -70,7 +70,7 @@
     var offers = (S.tradeOffers || []).filter(function (o) { return S.teams[o.team] && S.players[o.want]; });
     if (offers.length) h += UI.box('📨 收到的报价', offers.map(function (o) {
       var t = S.teams[o.team], want = S.players[o.want];
-      return '<div class="offer">' + UI.teamLink(t) + ' 想要 ' + UI.pname(want) + '（身价 ' + U.wan(P.value(want)) + '），给你：' + (o.give.map(function (id) { var p = S.players[id]; return p ? UI.pname(p) + '（' + p.pos + ' ' + UI.ovrTag(P.ovr(p)) + '，身价 ' + U.wan(P.value(p)) + '）' : ''; }).join(' + ') || '') + (o.money ? (o.give.length ? ' + ' : '') + U.money(o.money) + ' 资金' : '') +
+      return '<div class="offer">' + UI.teamLink(t) + ' 想要 ' + UI.pname(want) + '（身价 ' + U.wan(P.value(want)) + '），给你：' + (o.give.map(function (id) { var p = S.players[id]; return p ? UI.pname(p) + '（' + p.pos + ' ' + UI.ovrFog(p) + '，身价 ' + U.wan(P.value(p)) + '）' : ''; }).join(' + ') || '') + (o.money ? (o.give.length ? ' + ' : '') + U.money(o.money) + ' 资金' : '') +
         '　' + UI.btn('接受', 'tradeaccept', { id: o.id }, 'sm on') + ' ' + UI.btn('拒绝', 'tradedecline', { id: o.id }, 'sm') + ' <span class="muted small">' + (o.expires - S.dayNo) + ' 天内有效</span></div>';
     }).join(''));
     if (!TR().open(S)) return h;
@@ -81,7 +81,7 @@
     var other = S.teams[T.tid];
     var list = function (team, sel, act) {
       return '<table class="grid"><tr><th></th><th>球员</th><th>年龄</th><th>位置</th><th>综合</th><th>薪水</th><th>身价</th></tr>' + W().teamPlayers(S, team).sort(function (a, b) { return P.ovr(b) - P.ovr(a); }).map(function (p) {
-        return '<tr class="' + (sel[p.id] ? 'sel' : '') + '"><td><input type="checkbox" data-change="' + act + '" data-pid="' + p.id + '"' + (sel[p.id] ? ' checked' : '') + (p.listing ? ' disabled' : '') + '></td><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + UI.ovrTag(P.ovr(p)) + '</td><td>' + U.money(p.salary) + '</td><td>' + U.wan(P.value(p)) + '</td></tr>';
+        return '<tr class="' + (sel[p.id] ? 'sel' : '') + '"><td><input type="checkbox" data-change="' + act + '" data-pid="' + p.id + '"' + (sel[p.id] ? ' checked' : '') + (p.listing ? ' disabled' : '') + '></td><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + UI.ovrFog(p) + '</td><td>' + U.money(p.salary) + '</td><td>' + U.wan(P.value(p)) + '</td></tr>';
       }).join('') + '</table>';
     };
     h += '<div class="cols2"><div>' + UI.box('我送出（' + esc(pro.name) + '）', list(pro, T.give, 'tradegive')) + '</div><div>' + UI.box('我想要（' + esc(other.name) + '）', list(other, T.take, 'tradetake')) + '</div></div>';
@@ -134,7 +134,7 @@
       var pool = d.pool.map(function (id) { return S.players[id]; }).filter(function (p) { return p && !p.teamId; }).sort(function (a, b) { return mock[a.id] - mock[b.id]; });
       h += UI.box('轮到你了！第 ' + (d.idx + 1) + ' 顺位　剩余试训 ' + wo.pts + ' 次', '<table class="grid"><tr><th>预测顺位</th><th>姓名</th><th>年龄</th><th>位置</th><th>身高</th><th>体重</th><th>综合</th><th>潜力</th><th></th></tr>' + pool.slice(0, 40).map(function (p) {
         var seen = wo.seen[p.id];
-        return '<tr class="' + (seen ? 'sel' : '') + '"><td>#' + mock[p.id] + '</td><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.ovrTag(P.ovr(p)) + '</td><td>' + (seen ? UI.stars(P.stars(p)) + ' <span class="small">剩余 ' + P.potRemain(p).toFixed(1) + '</span>' : '<span class="muted">？</span>') + '</td><td>' +
+        return '<tr class="' + (seen ? 'sel' : '') + '"><td>#' + mock[p.id] + '</td><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.ovrFog(p) + '</td><td>' + (seen ? UI.stars(P.stars(p)) + ' <span class="small">剩余 ' + P.potRemain(p).toFixed(1) + '</span>' : '<span class="muted">？</span>') + '</td><td>' +
           (seen ? '' : UI.btn('试训', 'workout', { pid: p.id }, 'sm')) + ' ' + UI.btn('选他', 'draftpick', { pid: p.id }, 'sm on') + '</td></tr>';
       }).join('') + '</table><p>' + UI.btn('放弃本轮选秀', 'draftskip', {}, 'sm') + '</p>');
     } else if (d.done) h += '<div class="ok">本届选秀已结束。</div>';

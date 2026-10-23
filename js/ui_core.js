@@ -7,7 +7,7 @@
   var esc = U.esc;
 
   UI.NAV = [
-    { title: '俱乐部', short: '俱乐部', icon: '🏠', items: [['home', '俱乐部首页'], ['msgs', '系统消息'], ['trophies', '荣誉室'], ['datacenter', '数据中心'], ['manager', '经理生涯']] },
+    { title: '俱乐部', short: '俱乐部', icon: '🏠', items: [['home', '俱乐部首页'], ['msgs', '系统消息'], ['trophies', '荣誉室'], ['datacenter', '数据中心'], ['ops', '俱乐部运营'], ['manager', '经理生涯']] },
     { title: '球队管理', icon: '👥', items: [['players', '球员管理'], ['training', '球员训练'], ['staff', '职员管理'], ['arena', '球场建设'], ['finance', '球队财政']] },
     { title: '战术设定', icon: '📋', items: [['tac_pro', '职业战术'], ['tac_street', '街球战术']] },
     { title: '赛程管理', icon: '🏆', items: [['league', '职业联赛'], ['xcup', 'XBA杯'], ['allstar', '全明星'], ['cups', '街球杯赛']] },

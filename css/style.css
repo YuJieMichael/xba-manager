@@ -343,3 +343,12 @@ table.grid.box td, table.grid.box th { padding: 2px 4px; }
 .diff-c { border: 2px solid var(--line); border-radius: 6px; padding: 8px 10px; background: #fff; cursor: pointer; }
 .diff-c:hover { background: #fff0d6; border-color: var(--red); } .diff-c b { display: block; font-size: 16px; color: var(--red); } .diff-c span { font-size: 12px; color: var(--muted); }
 .tag.diff-easy { background: #d9f2d0; color: #2e7d2e; } .tag.diff-hard { background: #ffd8b0; color: #a0520a; } .tag.diff-hell { background: #3b0a0a; color: #ff6b6b; }
+/* 运营 / 迷雾 / 手感 */
+.fog { color: #8a7860; font-style: italic; }
+.form { font-size: 11px; margin-left: 2px; cursor: help; }
+.card-extra { margin: 4px 0; line-height: 1.6; }
+.trust { display: flex; align-items: center; gap: 8px; margin: 6px 0; } .trust .bar { flex: 1; height: 14px; } .trust span { font-weight: bold; }
+.facs { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.fac { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 6px 8px; } .fac-n { font-weight: bold; margin-bottom: 2px; } .fac .btn { margin-top: 4px; }
+.life-i { display: inline-block; margin: 2px 6px 2px 0; padding: 1px 6px; border-radius: 10px; border: 1px solid #ddd; font-size: 12px; }
+.life-i.on { background: #ffe6b8; border-color: var(--org2); font-weight: bold; } .life-i.past { color: #aaa; }

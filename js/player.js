@@ -148,6 +148,18 @@
     return Math.max(0.95, Math.min(1.04, c));
   };
 
+  // 擅长的进攻战术（按能力特点，最多 2 套）
+  P.favs = function (p) {
+    if (p.favs) return p.favs;
+    var a = p.a, iq = p.iq, sc = {
+      inside: a.str + a.reb + (p.h - 195) * 1.5, post: a.pas + a.str * 0.7 + iq.team * 0.6 + (p.h - 200),
+      outside: a.thr * 1.3 + a.sht * 0.7, pnr: a.pas * 0.8 + a.dri * 0.7 + iq.team * 0.5,
+      motion: a.pas * 0.7 + iq.team * 0.8 + a.sht * 0.5, fast: a.spd * 1.3 + a.dri * 0.7
+    };
+    p.favs = Object.keys(sc).sort(function (x, y) { return sc[y] * (0.9 + Math.random() * 0.2) - sc[x] * (0.9 + Math.random() * 0.2); }).slice(0, 2);
+    return p.favs;
+  };
+
   P.emptyStats = function () {
     return { gp: 0, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0, zn: {} };
   };

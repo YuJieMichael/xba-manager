@@ -48,7 +48,7 @@
   };
 
   // 效果系数
-  MG.salaryMul = function (S) { return 1 - 0.05 * MG.lv(S, 'nego'); };
+  MG.salaryMul = function (S) { return (1 - 0.05 * MG.lv(S, 'nego')) * (1 - Math.min(0.1, ((S.user.life && S.user.life.fame) || 0) / 1500)); };
   MG.tpMul = function (S) { return (1 + 0.1 * MG.lv(S, 'drill')) * Math.pow(1.1, X.World.legacyCount(S, 'tp')); };
   MG.injMul = function (S) { return 1 - 0.1 * MG.lv(S, 'medic'); };
 })(window.XBA);

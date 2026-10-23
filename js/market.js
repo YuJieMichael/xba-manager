@@ -30,7 +30,7 @@
     // 街头自由球员（进入街球队）
     while (cnt('free') < 12) {
       var age = U.ri(15, 20);
-      var p = P.gen(S, { age: age, ovr: U.rf(14, 22) + S.user.streetLevel * 1.5 + (20 - age) * -0.5, street: true });
+      var p = P.gen(S, { age: age, ovr: U.rf(14, 22) + S.user.streetLevel * 1.5 + (20 - age) * -0.5 + (X.Ops.fac(S, 'youth') - 1), street: true, gap: (function () { var g = age <= 17 ? U.rf(16, 30) : age <= 19 ? U.rf(12, 24) : U.rf(8, 18); return g + 2 * (X.Ops.fac(S, 'youth') - 1); })() });
       var v = P.value(p);
       listing(S, 'free', p, { days: U.ri(1, 2), min: Math.round(v * U.rf(0.3, 0.55) / 100) * 100, aiMax: U.chance(0.55) ? Math.round(v * U.rf(0.35, 0.9)) : 0 });
     }

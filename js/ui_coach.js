@@ -20,6 +20,7 @@
     if (X.Coach.autoOn(S)) X.Coach.prepare(S, 'league', key === 'h' ? a.id : h.id);
     var G = E.start(W().sideCfg(S, h, 'league', { home: true }), W().sideCfg(S, a, 'league'), { kind: 'pro', log: true, injuries: true });
     G.timeouts += X.Manager.lv(S, 'timeout');
+    if (X.Ops.life(S).energy < 30) G.timeouts = Math.max(1, G.timeouts - 1);
     UI.coachGame = { G: G, h: g.h, a: g.a, key: key, label: g.label };
     UI.go('coach');
   }

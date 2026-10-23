@@ -15,7 +15,7 @@
   W.userTrainMul = function (S, p) {
     var t = p && p.teamId && S.teams[p.teamId];
     if (!t || !t.isUser) return 1;
-    var m = W.diff(S).train;
+    var m = W.diff(S).train * X.Ops.trainMul(S) * X.Ops.energyMul(S);
     ((S.user.legacy && S.user.legacy.bonuses) || []).forEach(function (b) { if (b === 'train') m *= 1.1; });
     return m;
   };
@@ -260,6 +260,7 @@
     S.user.onboarded = true;
     X.XCup.setup(S, true);
     X.Alliance.init(S);
+    X.Ops.newSeasonRules(S);
     applyLegacy(S);
     X.Goals.newSeason(S);
     X.Cups.daily(S);
@@ -286,7 +287,8 @@
     if (team.kind === 'pro') {
       var b = (team.boards[board] || team.boards.league);
       cfg.presets = b.presets; cfg.config = b.config;
-      cfg.status = W.lineupStatus(S, team) * (team.isUser ? 1 + 0.01 * X.Manager.lv(S, 'locker') : 1);
+      cfg.status = W.lineupStatus(S, team) * (team.isUser ? (1 + 0.01 * X.Manager.lv(S, 'locker')) * (1 - (S.user.chemPen || 0)) : 1);
+      if (S.pressOpp && S.pressOpp.tid === team.id && S.pressOpp.day === S.dayNo) cfg.status *= S.pressOpp.m;
       cfg.morale = team.morale || 1;
     } else {
       cfg.presets = team.presets; cfg.config = team.config; cfg.status = 1;
@@ -303,7 +305,7 @@
     res.injuries.forEach(function (inj) {
       var p = S.players[inj.pid]; if (!p) return;
       var t = p.teamId && S.teams[p.teamId];
-      if (t && t.isUser) inj.rounds = Math.max(1, Math.round(inj.rounds * X.Manager.injMul(S)));
+      if (t && t.isUser) inj.rounds = Math.max(1, Math.round(inj.rounds * X.Manager.injMul(S) * (1 - 0.08 * (X.Ops.fac(S, 'med') - 1))));
       p.inj = Math.max(p.inj, inj.rounds); p.injName = inj.name;
       if (t && t.isUser) W.msg(S, p.name + ' 在比赛中受伤（' + inj.name + '），预计伤停 ' + inj.rounds + ' 轮', 'inj');
     });
@@ -311,6 +313,7 @@
       var p = S.players[b.pid]; if (!p) return;
       if (b.min > 0) P.iqGrow(p, b.min);
       if (opts.stats) P.addStats(p, b);
+      if ((opts.support || opts.stats) && b.min > 0) X.Ops.formAfterGame(S, b);
       if (opts.support && b.min > 0) p.support = U.clamp(p.support + (b.eff - 8) * 0.25 + 0.3, 0, 100);
     });
   };
@@ -326,7 +329,7 @@
 
   // 战术熟练度
   W.addProf = function (team, used, S) {
-    var mul = team.isUser && (S || UIS()) ? 1 + 0.25 * X.Manager.lv(S || UIS(), 'tactic') : 1;
+    var mul = team.isUser && (S || UIS()) ? (1 + 0.25 * X.Manager.lv(S || UIS(), 'tactic')) * (1 + 0.1 * (X.Ops.fac(S || UIS(), 'data') - 1)) : 1;
     ['off', 'def'].forEach(function (w) {
       for (var id in used[w]) team.prof[w][id] = (team.prof[w][id] || 0) + used[w][id] / 600 * mul;
     });
@@ -378,6 +381,7 @@
         userGameFinance(S, h.isUser ? h : a, h.isUser, res, h.isUser ? a.id : h.id);
         X.Rivals.afterGame(S, h.isUser ? a.id : h.id, h.isUser ? res.hs - res.as : res.as - res.hs, 'league');
         X.Manager.xp(S, (h.isUser ? res.hs > res.as : res.as > res.hs) ? 12 : 4);
+        X.Ops.afterLeagueGame(S, h.isUser ? res.hs > res.as : res.as > res.hs);
       }
       // AI 球迷变化
       [h, a].forEach(function (t) {
@@ -394,7 +398,7 @@
     var seats = X.ARENA[team.arena.lv - 1].seats;
     var ref = TICKET_REF[team.level];
     var g = team.rec.w + team.rec.l, wr = g ? team.rec.w / g : 0.5;
-    var demand = team.fans * (0.8 + 0.4 * wr) * U.clamp(Math.pow(ref / Math.max(1, team.ticket), 1.4), 0, 1.6);
+    var demand = team.fans * (0.8 + 0.4 * wr) * X.Ops.hypeMul(S) * U.clamp(Math.pow(ref / Math.max(1, team.ticket), 1.4), 0, 1.6);
     return Math.round(Math.min(seats, demand));
   };
 
@@ -446,7 +450,7 @@
     for (var i = 0; i < 6; i++) {
       var b = U.pick(BRANDS); if (used[b]) continue; used[b] = 1;
       var rounds = U.pick([5, 10, 13, 20, 26]);
-      var per = Math.round((team.fans / 1000 * 900 * U.rf(0.6, 1.4) + 1500) * (1 + 0.1 * X.Manager.lv(S, 'biz')));
+      var per = Math.round((team.fans / 1000 * 900 * U.rf(0.6, 1.4) + 1500) * (1 + 0.1 * X.Manager.lv(S, 'biz')) * X.Ops.hypeMul(S));
       S.adOffers.push({ id: U.uid(S, 'ad'), brand: b, rounds: rounds, total: per * rounds });
     }
   };
@@ -541,8 +545,8 @@
     msgs.forEach(function (m) { W.msg(S, m, 'staff'); });
     var proTrainer = pro.staff.trainer, recPro = X.Staff.recovery(pro), recSt = X.Staff.recovery(street);
     W.teamPlayers(S, pro).forEach(function (p) {
-      P.proDailyTrain(S, p, proTrainer);
-      p.st = Math.min(100, p.st + 40 + recPro + (p.train === "rest" ? 10 : 0) + (p.persona === 'lazy' ? 8 : 0));
+      if (p.skipTrain !== S.dayNo) P.proDailyTrain(S, p, proTrainer);
+      p.st = Math.min(100, p.st + 40 + recPro + (p.train === "rest" ? 10 : 0) + (p.persona === 'lazy' ? 8 : 0) + 2 * (X.Ops.fac(S, 'med') - 1));
     });
     W.teamPlayers(S, street).forEach(function (p) {
       p.st = Math.min(100, p.st + 45 + recSt + (p.persona === 'lazy' ? 8 : 0));
@@ -595,6 +599,11 @@
     X.Cups.daily(S);
     if (S.dayNo % 3 === 0) W.genAdOffers(S);
     X.Alliance.daily(S);
+    X.Ops.facDaily(S);
+    X.Ops.lifeDaily(S);
+    X.Ops.promiseDaily(S);
+    X.Ops.hypeDaily(S, out);
+    X.Ops.pressDaily(S);
     X.Trade.daily(S);
     if (S.day === X.Trade.DEADLINE) W.msg(S, '⏰ 交易截止日已过，本赛季不能再和其他球队交易球员', 'market');
     // 今日五佳球
@@ -659,6 +668,7 @@
     // 赛季目标判定、赛季总结（在升降级之前）
     X.Goals.checkGoals(S, true);
     X.Goals.seasonRecord(S);
+    var fired = X.Ops.seasonBoard(S);
 
     // XBA杯邀请函（按本赛季成绩）
     X.XCup.invites(S);
@@ -755,6 +765,8 @@
     S.leagues.forEach(function (lg) { lg.schedule = W.genSchedule(lg.teamIds); lg.results = []; });
     X.XCup.setup(S);
     X.Goals.newSeason(S);
+    X.Ops.newSeasonRules(S);
+    if (fired) X.Ops.fire(S);
     var ul = W.league(S, user.leagueId);
     W.msg(S, '第 ' + S.season + ' 赛季开始！你的球队参加 ' + ul.name, 'sys');
     out.seasonSummary = summary;
@@ -838,7 +850,7 @@
   // ===== 用户操作 =====
   W.renewContract = function (S, p, rounds) {
     if (p.contract >= 10) return '合同少于 10 轮时才能续约';
-    var sal = Math.round(P.salaryFor(p) * (rounds >= 52 ? 1.05 : 1) * X.Manager.salaryMul(S));
+    var sal = Math.round(P.salaryFor(p) * (rounds >= 52 ? 1.05 : 1) * X.Manager.salaryMul(S) * X.Ops.renewMul(S, p));
     p.salary = sal; p.contract += rounds;
     W.msg(S, p.name + ' 续约 ' + rounds + ' 轮，新工资 ' + U.money(sal) + '/轮', 'player');
     return null;

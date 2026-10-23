@@ -45,7 +45,7 @@
       }
       var watch = S.user.watch.indexOf(l.id) >= 0;
       if (l.seller !== 'user') ops += ' ' + UI.link(watch ? '取消关注' : '关注', 'watch', { id: l.id });
-      return '<tr><td>' + UI.pname(p) + '</td><td class="small">' + M().NAMES[l.mk] + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td>' + (showStars ? '<td>' + (l.mk === 'pro' ? UI.stars(P.stars(p)) : '-') + '</td>' : '') +
+      return '<tr><td>' + UI.pname(p) + '</td><td class="small">' + M().NAMES[l.mk] + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td><b>' + UI.ovrFog(p) + '</b></td>' + (showStars ? '<td>' + (l.mk === 'pro' ? UI.stars(P.stars(p)) : '-') + '</td>' : '') +
         '<td>' + (days <= 0 ? '今天' : days + ' 天后') + '</td><td>' + price + '</td><td>' + status + '</td><td>' + ops + '</td></tr>';
     }).join('') + '</table><p class="muted small">交易在「进入下一天」时结算，成交后球员到队。</p>';
     return h;
@@ -75,7 +75,7 @@
     if (!d.done && d.order[d.idx] === S.user.proId) {
       var pool = d.pool.map(function (id) { return S.players[id]; }).filter(function (p) { return p && !p.teamId; }).sort(function (a, b) { return P.ovr(b) - P.ovr(a); });
       h += UI.box('轮到你了！第 ' + (d.idx + 1) + ' 顺位', '<table class="grid"><tr><th>姓名</th><th>年龄</th><th>位置</th><th>身高</th><th>体重</th><th>综合</th><th>潜力</th><th></th></tr>' + pool.slice(0, 40).map(function (p) {
-        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + UI.stars(P.stars(p)) + '</td><td>' + UI.btn('选他', 'draftpick', { pid: p.id }, 'sm') + '</td></tr>';
+        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td><b>' + UI.ovrFog(p) + '</b></td><td>' + UI.stars(P.stars(p)) + '</td><td>' + UI.btn('选他', 'draftpick', { pid: p.id }, 'sm') + '</td></tr>';
       }).join('') + '</table><p>' + UI.btn('放弃本轮选秀', 'draftskip', {}, 'sm') + '</p>');
     } else if (d.done) h += '<div class="ok">本届选秀已结束。</div>';
     h += UI.box('选秀结果', '<table class="grid"><tr><th>顺位</th><th>球队</th><th>球员</th></tr>' + d.picks.map(function (x, i) {

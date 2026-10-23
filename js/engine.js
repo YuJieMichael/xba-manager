@@ -18,6 +18,10 @@
 
   var BASE = { in: 0.535, mid: 0.415, drv: 0.495, thr: 0.35, fb: 0.66 };
   var FOUL = { in: 0.13, mid: 0.04, drv: 0.12, thr: 0.025, fb: 0.11 };
+  // 赛季版本规则（见 meta.js）
+  var RULES = { thr: 0, foulIn: 1, blk: 1, oreb: 1, drain: 1, clock: 1, fb: 1, zone: 0 };
+  E.setRules = function (r) { RULES = Object.assign({ thr: 0, foulIn: 1, blk: 1, oreb: 1, drain: 1, clock: 1, fb: 1, zone: 0 }, r || {}); };
+  E.getRules = function () { return RULES; };
 
   function rw(r) { return X.rankW(r); }
 
@@ -26,7 +30,7 @@
   function tr(p, id) { return p._tr && p._tr[id]; }
   // 特长加成倍率：1 + 基础效果 × 等级系数
   function TF(p, id, base) { var lv = p._tr && p._tr[id]; return lv ? 1 + base * X.TRAIT_TIERS[lv].f : 1; }
-  function condF(p) { return P.staminaF(p._st) * (p._morale || 1) * (p._boost || 1) * (p.persona === 'hothead' ? 1.03 : 1) * (CLUTCH && p.persona === 'bigheart' ? 1.05 : 1); }
+  function condF(p) { return P.staminaF(p._st) * (p._morale || 1) * (p._boost || 1) * (p._foc || 1) * (1 + 0.02 * (p.form || 0)) * (p.mor || 1) * (p.persona === 'hothead' ? 1.03 : 1) * (CLUTCH && p.persona === 'bigheart' ? 1.05 : 1); }
 
   function methodAbility(p, m) {
     var a = p.a, v;
@@ -81,13 +85,25 @@
       p._st = cfg.noStamina ? 100 : p.st;
       p._out = false; p._pf = 0; p._sec = 0;
       p._morale = cfg.morale || 1;
+      p._foc = 1;
+      P.favs(p);
       p._tr = {}; P.activeTraits(p).forEach(function (x) { p._tr[x.t.id] = x.lv; });
       side.box[p.id] = { pid: p.id, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0, zn: {} };
     });
     return side;
   }
 
-  function preset(side) { return side.manual || side.presets[side.curPreset] || side.presets[0]; }
+  // 被对手 BP 禁用的进攻战术换成整体进攻（若禁的就是整体进攻则换挡拆配合）
+  function preset(side) {
+    var pr = side.manual || side.presets[side.curPreset] || side.presets[0];
+    if (side.ban && pr && pr.off === side.ban) {
+      side._banFix = side._banFix || {};
+      var key = side.presets.indexOf(pr) + '|' + (pr === side.manual ? 'm' : '');
+      if (!side._banFix[key] || side._banFix[key].src !== pr) side._banFix[key] = Object.assign({}, pr, { off: side.ban === 'motion' ? 'pnr' : 'motion', src: pr });
+      return side._banFix[key];
+    }
+    return pr;
+  }
 
   function tacticLevel(side, which, id) {
     var lv = (side.prof[which] && side.prof[which][id]) || 0;
@@ -162,6 +178,9 @@
     else extra = sh.iq.off;
     var pr = preset(side);
     var v = 0.55 * own + 0.25 * sup + 0.2 * extra;
+    // 擅长战术：出手人擅长 +4%，场上每多一个擅长的人 +1%
+    if (sh.favs && sh.favs.indexOf(pr.off) >= 0) v *= 1.04;
+    v *= 1 + 0.01 * side.court.filter(function (p) { return p.favs && p.favs.indexOf(pr.off) >= 0; }).length;
     v *= side.status * (1 + 0.01 * tacticLevel(side, 'off', pr.off)) * (side.home ? 1.02 : 1);
     if (pr.intensity) v *= 1 + (pr.intensity - 2) * 0.04;
     return v;
@@ -178,7 +197,7 @@
     var iqKey = defTac.zone ? 'team' : 'def';
     var iq = U.avg(side.court.map(function (p) { return p.iq[iqKey]; }));
     var v = (0.5 * match + 0.5 * team) * (0.85 + 0.3 * iq / 100);
-    var counter = 1.15 - 0.03 * (defTac.rank[mi] - 1);
+    var counter = 1.15 - 0.03 * (defTac.rank[mi] - 1) + (defTac.zone ? RULES.zone : 0);
     v *= counter * side.status * (1 + 0.01 * tacticLevel(side, 'def', pr.def));
     if (pr.intensity) v *= 1 + (pr.intensity - 2) * 0.04;
     return v;
@@ -270,7 +289,7 @@
         side.court.forEach(function (p) {
           onIds[p.id] = 1;
           p._sec += sec;
-          if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.0075 + 0.01 * (1 - p.a.sta / 100)) * (2 - TF(p, 'ironman', 0.25)) * drainMul * (1 + (intensity - 2) * 0.25));
+          if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.0075 + 0.01 * (1 - p.a.sta / 100)) * (2 - TF(p, 'ironman', 0.25)) * drainMul * RULES.drain * (1 + (intensity - 2) * 0.25));
           side.used.off[preset(side).off] = (side.used.off[preset(side).off] || 0) + sec;
           side.used.def[preset(side).def] = (side.used.def[preset(side).def] || 0) + sec;
         });
@@ -318,7 +337,7 @@
       if (trans === 'steal' && Math.random() < 0.4 + 0.35 * fbW) return X.METHODS[METHOD_IDX.stl_fb];
       if (trans === 'dreb') {
         var spdR = U.avg(off.court.map(function (p) { return p.a.spd; })) / 50;
-        if (Math.random() < (0.06 + 0.3 * fbW * fbW) * spdR) return X.METHODS[METHOD_IDX.fb];
+        if (Math.random() < (0.06 + 0.3 * fbW * fbW) * spdR * RULES.fb) return X.METHODS[METHOD_IDX.fb];
       }
       var ws = [];
       for (var i = 0; i < 12; i++) { var w = rw(tac.rank[i]); ws.push(w * w); }
@@ -344,7 +363,7 @@
         var sw = off.court.map(function (p, s) { return s === ss ? 0 : Math.pow(p.a.str, 2) * (off.cols[s] <= 1 ? 1.5 : 1); });
         helper = off.court[U.wpick(sw)];
       }
-      var t = m.zone === 'fb' ? U.ri(4, 8) : (m.kind === 'iso' ? U.ri(10, 20) : U.ri(13, 23));
+      var t = Math.round((m.zone === 'fb' ? U.ri(4, 8) : (m.kind === 'iso' ? U.ri(10, 20) : U.ri(13, 23))) * RULES.clock);
       if (trans === 'oreb') t = U.ri(3, 10);
       t = Math.min(t, Math.max(1, clock));
       tick(t); clock -= t;
@@ -371,8 +390,8 @@
 
       var dTac = DEF[preset(def).def];
       var o = offRating(off, m, ss, helper), d = defRating(def, m, ss, dTac);
-      var pMake = U.clamp(BASE[m.zone] * Math.pow(o * off.form / Math.max(1, d * def.form), 0.55), 0.12, 0.85);
-      var fouled = Math.random() < FOUL[m.zone] * (1 + (dfd._pf >= 4 ? -0.4 : 0));
+      var pMake = U.clamp((BASE[m.zone] + (m.zone === 'thr' ? RULES.thr : 0)) * Math.pow(o * off.form / Math.max(1, d * def.form), 0.55), 0.12, 0.85);
+      var fouled = Math.random() < FOUL[m.zone] * (m.zone === 'in' || m.zone === 'drv' ? RULES.foulIn : 1) * (1 + (dfd._pf >= 4 ? -0.4 : 0));
       if (fouled) pMake *= 0.55;
       var made = Math.random() < pMake;
       var isThree = m.zone === 'thr';
@@ -417,7 +436,7 @@
         if (m.zone !== 'thr' && m.zone !== 'fb') {
           var bws = def.court.map(function (p, s) { return Math.pow(p.a.blk * rw(X.DEF_POS_RANK.blk[def.cols[s]]) * P.heightScore(p) / 50, 2); });
           var bl = def.court[U.wpick(bws)];
-          var pBlk = U.clamp((0.06 + 0.22 * (bl.a.blk / 100) + (P.effH(bl) - P.effH(sh)) / 200) * TF(bl, 'blocker', 0.4), 0.02, 0.5);
+          var pBlk = U.clamp((0.06 + 0.22 * (bl.a.blk / 100) + (P.effH(bl) - P.effH(sh)) / 200) * TF(bl, 'blocker', 0.4) * RULES.blk, 0.02, 0.5);
           if (Math.random() < pBlk) { blocked = true; box(def, bl).blk++; hiL(2 + (P.effH(sh) > P.effH(bl) ? 1 : 0), '【' + def.name + '】' + bl.name + ' 一记大帽扇飞 ' + sh.name); lg(bl.name + ' 一记大帽扇飞了 ' + sh.name + ' 的出手！', 'blk', spot(off, m.zone, 2)); }
         }
         if (!blocked) lg(prefix + fill(U.pick(TXT[m.zone + '_miss']), who), '', spot(off, m.zone, 0));
@@ -431,7 +450,7 @@
       if (made || fouled) return 'score';
       // 篮板
       var orb = teamReb(off, true), drb = teamReb(def, false);
-      var pO = U.clamp(0.27 * Math.pow(orb / Math.max(1, drb), 0.7), 0.1, 0.42);
+      var pO = U.clamp(0.27 * Math.pow(orb / Math.max(1, drb), 0.7) * RULES.oreb, 0.1, 0.45);
       if (Math.random() < pO) {
         var r = pickRebounder(off, true); box(off, r).oreb++;
         lg(r.name + ' 抢下进攻篮板', 'reb');
@@ -510,6 +529,15 @@
       if (pr) lg(side.name + ' 暂停调整：进攻【' + OFF[pr.off].cn + '】 防守【' + E.defName(pr.def, kind) + '】', 'tac');
       fillCourt(side, lg, false);
     };
+    // 赛前 BP：bp = { h: { ban: 进攻战术id, focus: 球员id }, a: {...} }，ban 禁用对方战术，focus 包夹对方球员（-8%）
+    G.applyBP = function (bp) {
+      [['h', H, A], ['a', A, H]].forEach(function (x) {
+        var mine = bp[x[0]]; if (!mine) return;
+        if (mine.ban) { x[2].ban = mine.ban; lg(x[1].name + ' 赛前针对性部署：限制对手的【' + OFF[mine.ban].cn + '】', 'tac'); }
+        if (mine.focus) { var p = x[2].roster.find(function (r) { return r.id === mine.focus; }); if (p) { p._foc = 0.92; lg(x[1].name + ' 重点包夹 ' + p.name, 'tac'); } }
+      });
+      fillCourt(H, null, true); fillCourt(A, null, true);
+    };
     G.timeout = function (key) {
       if (G.timeouts <= 0) return false;
       G.timeouts--;
@@ -545,7 +573,7 @@
       };
       [H, A].forEach(function (side) { side.roster.forEach(function (p) { res.stam[p.id] = p._st; }); });
       // 清理临时字段
-      [H, A].forEach(function (side) { side.roster.forEach(function (p) { delete p._st; delete p._out; delete p._pf; delete p._sec; delete p._morale; delete p._tr; delete p._boost; }); });
+      [H, A].forEach(function (side) { side.roster.forEach(function (p) { delete p._st; delete p._out; delete p._pf; delete p._sec; delete p._morale; delete p._tr; delete p._boost; delete p._foc; }); });
       return res;
     }
   };

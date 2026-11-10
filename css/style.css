@@ -23,7 +23,7 @@ header.top { background: linear-gradient(#c21d35, var(--red2)); color: #fff; pad
 
 .statusbar { display: flex; gap: 12px; align-items: center; padding: 8px 12px; background: var(--cream); border-bottom: 2px solid var(--line); flex-wrap: wrap; }
 .st-l { min-width: 150px; } .st-date { font-weight: bold; color: var(--red); font-size: 15px; }
-.st-m { flex: 1; min-width: 260px; } .st-r { display: flex; gap: 10px; align-items: center; }
+.st-m { flex: 1; min-width: 260px; } .st-c { display: none; cursor: pointer; } .st-r { display: flex; gap: 10px; align-items: center; }
 .badge { background: var(--bad); color: #fff; border-radius: 8px; padding: 0 6px; margin-left: 3px; font-size: 11px; }
 .money { color: #b4431a; font-weight: bold; }
 
@@ -329,7 +329,8 @@ table.grid.box td, table.grid.box th { padding: 2px 4px; }
   .logo-ball { width: 22px; height: 22px; line-height: 22px; font-size: 14px; }
   .statusbar { font-size: 11px; line-height: 1.45; padding: 4px 8px; }
   .st-l { min-width: 0; width: 100%; display: flex; gap: 8px; align-items: baseline; } .st-date { font-size: 13px; }
-  .st-m { min-width: 0; }
+  .st-m { min-width: 0; display: none; } body.st-open .st-m { display: block; }
+  .st-c { display: block; margin-left: auto; white-space: nowrap; }
   .st-r { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: rgba(255, 246, 232, .97); border-top: 2px solid var(--line); padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); justify-content: space-between; }
   .st-r .btn.big { flex: 1; margin-left: 10px; padding: 9px 12px; font-size: 15px; }
   #app { padding-bottom: 64px; }

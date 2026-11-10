@@ -105,11 +105,12 @@
     var starters = lu.map(function (id) { return S.players[id]; }).filter(Boolean);
     var tired = starters.slice().sort(function (a, b) { return a.a.sta - b.a.sta; }).slice(0, 3).map(function (p) { return p.id; });
     var lu2 = E.autoLineup(ps, 'pro', tired);
-    var off = E.suggestOff(ps, lu, 'pro');
+    var pickOff = team.isUser ? E.suggestOff : E.aiPickOff;
+    var off = pickOff(ps, lu, 'pro');
     var def = U.pick(['man', 'man', 'z23', 'z212', 'm_in', 'm_out', 'z32']);
     return [
       { name: '主力阵容', lineup: lu, off: off, def: def, core: -1, mark: -1 },
-      { name: '轮换阵容', lineup: lu2, off: E.suggestOff(ps, lu2, 'pro'), def: def, core: -1, mark: -1 },
+      { name: '轮换阵容', lineup: lu2, off: pickOff(ps, lu2, 'pro'), def: def, core: -1, mark: -1 },
       { name: '内线阵容', lineup: lu.slice(), off: 'inside', def: 'z23', core: 0, mark: -1 },
       { name: '外线阵容', lineup: lu.slice(), off: 'outside', def: 'z32', core: 3, mark: -1 }
     ];
@@ -120,7 +121,7 @@
   W.defaultStreetTactics = function (S, team) {
     var ps = W.teamPlayers(S, team);
     var lu = E.autoLineup(ps, 'street');
-    var off = E.suggestOff(ps, lu, 'street');
+    var off = (team.isUser ? E.suggestOff : E.aiPickOff)(ps, lu, 'street');
     return {
       presets: [
         { name: '先发', lineup: lu, off: off, def: 'man', intensity: 2 },
@@ -355,7 +356,11 @@
     if (S.myMatches.length > 80) { var old = S.myMatches.pop(); delete S.matches[old]; }
     // 只保留最近 30 场的文字直播，节省存档空间
     var stale = S.myMatches[30];
-    if (stale && S.matches[stale]) S.matches[stale].log = null;
+    if (stale && S.matches[stale]) {
+      S.matches[stale].log = null;
+      // 老比赛的技术统计也去掉热区明细
+      var sb = S.matches[stale].box; if (sb) sb.h.concat(sb.a).forEach(function (b) { delete b.zn; });
+    }
     return id;
   };
 
@@ -662,7 +667,7 @@
     var L = S.user.ledger[S.season];
     if (L) {
       var net = L.inc - L.exp;
-      if (net > 0) { var tax = Math.round(net * (S.user.member ? 0.25 : 0.3)); W.spend(S, tax, '赛季所得税'); W.msg(S, '本赛季净利润 ' + U.money(net) + '，缴纳所得税 ' + U.money(tax), 'fin'); }
+      if (net > 0) { var tax = W.incomeTax(net, S.user.member); W.spend(S, tax, '赛季所得税'); W.msg(S, '本赛季净利润 ' + U.money(net) + '，缴纳所得税 ' + U.money(tax), 'fin'); }
     }
 
     // 赛季目标判定、赛季总结（在升降级之前）
@@ -684,7 +689,7 @@
       var t = S.teams[p.teamId];
       if (p.age >= p.retireAge) {
         if (t.isUser) W.msg(S, p.name + '（' + p.age + '岁）宣布退役', 'player');
-        p.career.push({ season: S.season, team: t.name, stats: p.stats });
+        p.career.push({ season: S.season, team: t.name, stats: P.careerStats(p.stats) });
         p.stats = P.emptyStats();
         X.Awards.onRetire(S, p, t);
         if (t.isUser && X.Awards.inHof(S, p.id)) X.Staff.legend(S, p);
@@ -697,7 +702,7 @@
     // 赛季统计归档
     Object.keys(S.players).forEach(function (id) {
       var p = S.players[id];
-      if (p.stats.gp > 0) { p.career.push({ season: S.season, team: p.teamId && S.teams[p.teamId] ? S.teams[p.teamId].name : '', stats: p.stats }); if (p.career.length > 20) p.career.shift(); }
+      if (p.stats.gp > 0) { p.career.push({ season: S.season, team: p.teamId && S.teams[p.teamId] ? S.teams[p.teamId].name : '', stats: P.careerStats(p.stats) }); if (p.career.length > 20) p.career.shift(); }
       p.stats = P.emptyStats();
     });
     Object.keys(S.teams).forEach(function (tid) { S.teams[tid].rec = { w: 0, l: 0, pf: 0, pa: 0 }; });
@@ -770,6 +775,25 @@
     var ul = W.league(S, user.leagueId);
     W.msg(S, '第 ' + S.season + ' 赛季开始！你的球队参加 ' + ul.name, 'sys');
     out.seasonSummary = summary;
+    W.gcPlayers(S);
+  };
+
+  // 累进所得税：100 万以内 25%，100 万–1000 万 35%，1000 万以上 45%（非会员每档 +5%）
+  // 原来一律 25%，顶级联赛一个赛季能净赚上亿，后期钱多到没处花
+  W.TAX_BRACKETS = [[1000000, 0.25], [10000000, 0.35], [Infinity, 0.45]];
+  W.incomeTax = function (net, member) {
+    var tax = 0, lo = 0, add = member ? 0 : 0.05;
+    W.TAX_BRACKETS.forEach(function (b) { if (net > lo) tax += (Math.min(net, b[0]) - lo) * (b[1] + add); lo = b[0]; });
+    return Math.round(tax);
+  };
+
+  // 清理孤儿球员：没有球队、也没被存档其他地方（市场、选秀、球探、交易、关注……）引用的球员
+  W.gcPlayers = function (S) {
+    var refs = {}, txt = JSON.stringify(S, function (k, v) { return k === 'players' && v === S.players ? undefined : v; });
+    txt.replace(/"(p\d+)"/g, function (_, id) { refs[id] = 1; });
+    var n = 0;
+    Object.keys(S.players).forEach(function (id) { var p = S.players[id]; if (!p.teamId && !refs[id]) { delete S.players[id]; n++; } });
+    return n;
   };
 
   function promoteRelegate(S) {

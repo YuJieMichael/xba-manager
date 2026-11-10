@@ -161,13 +161,13 @@
       var pay = W().payroll(S, pro), cap = W().cap(pro);
       var inLu = {};
       pro.boards.league.presets.forEach(function (pr) { pr.lineup.forEach(function (id) { if (id) inLu[id] = 1; }); });
-      h += '<table class="grid"><tr><th>姓名</th><th>号码</th><th>年龄</th><th>位置</th><th>身高</th><th>体重</th><th>体力</th><th>综合</th><th>薪水</th><th>合同</th><th>球迷支持</th><th>操作</th></tr>' + ps.map(function (p) {
+      h += '<table class="grid"><tr><th>姓名</th><th>综合</th><th>位置</th><th>体力</th><th>号码</th><th>年龄</th><th>身高</th><th>体重</th><th>薪水</th><th>合同</th><th>球迷支持</th><th>操作</th></tr>' + ps.map(function (p) {
         var ops = [];
         if (p.listing) ops.push('<span class="tag">挂牌中</span>');
         else ops.push(UI.link('出售', 'sellpro', { pid: p.id }));
         if (p.contract < 10) ops.push(UI.link('续约', 'renew', { pid: p.id }, 'hot'));
         if (P.isMaxed(p) && (p.star || 0) < X.STAR_MAX) ops.push(UI.link('升星', 'starup', { pid: p.id }, 'hot'));
-        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.stam(p.st) + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + U.money(p.salary) + '</td><td class="' + (p.contract < 10 ? 'red' : '') + '">' + p.contract + '</td><td>' + Math.round(p.support) + '</td><td>' + ops.join(' ') + '</td></tr>';
+        return '<tr><td>' + UI.pname(p) + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + p.pos + '</td><td>' + UI.stam(p.st) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + U.money(p.salary) + '</td><td class="' + (p.contract < 10 ? 'red' : '') + '">' + p.contract + '</td><td>' + Math.round(p.support) + '</td><td>' + ops.join(' ') + '</td></tr>';
       }).join('') + '</table>';
       h += '<div class="sumline">球员工资总额：' + UI.money(pay) + '/轮　工资帽：' + UI.money(cap) + '　阵容状态：<b>' + Math.round(W().lineupStatus(S, pro) * 100) + '%</b>　化学反应：<b title="由球员性格决定：领袖、老好人加分，刺头多了扣分">' + Math.round(P.chemistry(ps) * 100) + '%</b>　人数 ' + ps.length + '/' + M().PRO_MAX + '（最少 ' + M().PRO_MIN + '）' +
         (pay > cap ? '　<b class="red">已超工资帽！奢侈税 = 3000 + 超出额×5</b>' : '　<span class="ok">未达工资帽</span>') + '</div>';
@@ -175,7 +175,7 @@
       h += '<p>球员奖金（下一轮发放，提高士气）：' + [0, 5000, 20000, 50000].map(function (v) { return UI.btn(v ? U.money(v) : '不发', 'bonus', { v: v }, 'sm' + (pro.bonus === v ? ' on' : '')); }).join(' ') + '</p>';
     } else {
       var st = W().userStreet(S), sp = W().teamPlayers(S, st).sort(function (a, b) { return P.ovr(b) - P.ovr(a); });
-      h += '<table class="grid"><tr><th>姓名</th><th>号码</th><th>年龄</th><th>位置</th><th>身高</th><th>体重</th><th>体力</th><th>心情</th><th>综合</th><th>潜力</th><th>操作</th></tr>' + sp.map(function (p) {
+      h += '<table class="grid"><tr><th>姓名</th><th>综合</th><th>潜力</th><th>年龄</th><th>位置</th><th>体力</th><th>心情</th><th>号码</th><th>身高</th><th>体重</th><th>操作</th></tr>' + sp.map(function (p) {
         var ops = [];
         if (p.listing) ops.push('<span class="tag">竞价中</span>');
         else {
@@ -184,7 +184,7 @@
           ops.push(UI.link('挂牌', 'sellst', { pid: p.id }));
           ops.push(UI.link('下放', 'release', { pid: p.id }));
         }
-        return '<tr><td>' + UI.pname(p) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + UI.stam(p.st) + '</td><td>' + UI.stam(p.mood) + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + (P.potVisible(S, p) ? UI.stars(P.stars(p)) : '<span class="muted">?</span>') + '</td><td>' + ops.join(' ') + '</td></tr>';
+        return '<tr><td>' + UI.pname(p) + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + (P.potVisible(S, p) ? UI.stars(P.stars(p)) : '<span class="muted">?</span>') + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + UI.stam(p.st) + '</td><td>' + UI.stam(p.mood) + '</td><td>' + p.num + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + ops.join(' ') + '</td></tr>';
       }).join('') + '</table>';
       h += '<div class="sumline">人数 ' + sp.length + '/' + M().ST_MAX + '（最少 ' + M().ST_MIN + '）　街球选拔卡：<b>' + S.user.selectCards + '</b> 张　' + UI.btn('雇用球探（' + (S.user.items.scout > 0 ? '道具×' + S.user.items.scout : '30 游戏币') + '）', 'scout', {}, 'sm') + '　自动球探，直到出现 <select id="scout-target">' + M().GRADES.map(function (g, i) { return '<option value="' + i + '"' + (i === (UI.scoutTarget == null ? 2 : UI.scoutTarget) ? ' selected' : '') + '>' + g.cn + '·' + g.name + (i < 3 ? ' 或更好' : '') + '</option>'; }).join('') + '</select> ' + UI.btn('开始', 'scoutauto', {}, 'sm') + ' <span class="muted small">每次 30 游戏币，找到后自动签下</span></div>';
       h += '<p class="tip">选拔：用选拔卡把 18 岁以上街球员提拔到职业队，潜力上限会提高（现值越接近上限、年龄越小，提升越多）。选秀：参加职业选秀离队，你只得到几万资金。挂牌：在街头竞价出售，获得游戏币。下放：球员结束篮球生涯。</p>';
@@ -555,7 +555,7 @@
     if (tab === 'cur') {
       var L = S.user.ledger[S.season] || { days: {}, inc: 0, exp: 0 };
       var days = Object.keys(L.days).map(Number).sort(function (a, b) { return b - a; });
-      h += '<div class="sumline">本赛季收入 ' + UI.money(L.inc) + '　支出 ' + UI.money(L.exp) + '　净利润 <b class="' + (L.inc - L.exp < 0 ? 'red' : 'ok') + '">' + U.money(L.inc - L.exp) + '</b>　<span class="muted">赛季末对净利润征收 25%（会员优惠）所得税</span></div>';
+      h += '<div class="sumline">本赛季收入 ' + UI.money(L.inc) + '　支出 ' + UI.money(L.exp) + '　净利润 <b class="' + (L.inc - L.exp < 0 ? 'red' : 'ok') + '">' + U.money(L.inc - L.exp) + '</b>　<span class="muted">赛季末按累进税率征收所得税，按当前净利润预计 ' + U.money(L.inc - L.exp > 0 ? W().incomeTax(L.inc - L.exp, UI.S.user.member) : 0) + '</span></div>';
       h += days.map(function (d) {
         var items = L.days[d], net = U.sum(items.map(function (x) { return x.v; }));
         var r = W().roundOfDay(d);

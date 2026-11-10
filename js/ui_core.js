@@ -155,7 +155,9 @@
   UI.status = function () {
     var S = UI.S, pro = W().userPro(S), lg = W().league(S, pro.leagueId);
     var unread = S.msgs.filter(function (m) { return !m.read; }).length;
-    return '<div class="st-l"><div class="st-date">' + W().dayLabel(S) + '</div><div class="muted small">' + esc(S.user.manager) + ' 经理</div></div>' +
+    return '<div class="st-l"><div class="st-date">' + W().dayLabel(S) + '</div><div class="muted small">' + esc(S.user.manager) + ' 经理</div>' +
+      // 窄屏只显示一行摘要，点「详情」展开完整状态栏
+      '<div class="st-c" data-act="sttoggle">💰' + U.wan(S.user.money) + '　' + pro.rec.w + '胜' + pro.rec.l + '负　<span class="lnk">' + (document.body.classList.contains('st-open') ? '收起▴' : '详情▾') + '</span></div></div>' +
       '<div class="st-m"><div>职业队：' + UI.teamLink(pro) + '　资金：' + UI.money(S.user.money) + '　游戏币：<b>' + S.user.coins + '</b></div>' +
       '<div>街球队：' + UI.teamLink(W().userStreet(S)) + '　街球等级：<b>' + S.user.streetLevel + '</b>　街球积分：<b>' + S.user.streetPts + '</b>　联赛：<b>' + esc(lg.name) + '</b>（' + pro.rec.w + '胜' + pro.rec.l + '负）</div></div>' +
       '<div class="st-r">' + UI.link('消息' + (unread ? '<b class="badge">' + unread + '</b>' : ''), 'go', { r: 'msgs' }) + UI.btn('进入下一天 ▶', 'advance', {}, 'big') + '</div>';
@@ -185,6 +187,7 @@
     }).join('');
     return '<div class="nav-wide">' + wide + '</div><div class="nav-narrow"><div class="nav-cats">' + cats + '</div><div class="nav-subs">' + subs + '</div></div>';
   };
+  UI.acts.sttoggle = function () { document.body.classList.toggle('st-open'); document.getElementById('statusbar').innerHTML = UI.status(); };
   UI.acts.navcat = function (d) {
     UI.navCat = +d.i;
     document.getElementById('nav').innerHTML = UI.navHtml();

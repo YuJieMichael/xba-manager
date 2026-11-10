@@ -164,6 +164,9 @@
     return { gp: 0, min: 0, pts: 0, fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, ast: 0, stl: 0, blk: 0, to: 0, pf: 0, eff: 0, zn: {} };
   };
 
+  // 生涯履历只存界面和名人堂用到的字段（原来整份技术统计连热区都存，2500 名球员每赛季让存档涨约 0.4MB）
+  P.careerStats = function (s) { return { gp: s.gp, pts: s.pts, oreb: s.oreb, dreb: s.dreb, ast: s.ast }; };
+
   P.displayPos = function (p) { return p.pos; };
 
   // 潜力可见（会员：到队 1 天即可）

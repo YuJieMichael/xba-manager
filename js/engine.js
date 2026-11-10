@@ -16,7 +16,15 @@
   E.SLOT_NAMES = { pro: ['中锋', '大前锋', '小前锋', '得分后卫', '组织后卫'], street: ['内线', '锋线', '后卫'] };
   E.SLOT_POS = { pro: ['C', 'PF', 'SF', 'SG', 'PG'], street: ['C', 'SF', 'PG'] };
 
-  var BASE = { in: 0.535, mid: 0.415, drv: 0.495, thr: 0.35, fb: 0.66 };
+  // 各区域基础命中率。快攻原为 0.66（每回合约 1.32 分，远高于其他方式），「快速进攻」对任何防守胜率都在 54–67%；
+  // 降到 0.50 后快攻仍是最高效的单次进攻，但会被盯人防守克制；内线 0.535 → 0.515，免得强打内线又成了新的万金油；
+  // 中投、突破、三分略微上调，补回总得分（见 tests/tactics.js）
+  var BASE = { in: 0.515, mid: 0.43, drv: 0.505, thr: 0.355, fb: 0.50 };
+  // 防守克制倍率：克制秩次 1 → COUNTER.hi，每低一级减 COUNTER.step（秩次 11 → hi - 10×step）
+  // 原为 1.15/0.03（±15%），经过命中率公式的 0.55 次方后只剩约 ±8%，克制几乎感觉不到；放大到 ±20%
+  var COUNTER = { hi: 1.20, step: 0.04 };
+  E.TUNE = { BASE: BASE, COUNTER: COUNTER };
+  E.counterMul = function (rank) { return COUNTER.hi - COUNTER.step * (rank - 1); };
   var FOUL = { in: 0.13, mid: 0.04, drv: 0.12, thr: 0.025, fb: 0.11 };
   // 赛季版本规则（见 meta.js）
   var RULES = { thr: 0, foulIn: 1, blk: 1, oreb: 1, drain: 1, clock: 1, fb: 1, zone: 0 };
@@ -197,7 +205,7 @@
     var iqKey = defTac.zone ? 'team' : 'def';
     var iq = U.avg(side.court.map(function (p) { return p.iq[iqKey]; }));
     var v = (0.5 * match + 0.5 * team) * (0.85 + 0.3 * iq / 100);
-    var counter = 1.15 - 0.03 * (defTac.rank[mi] - 1) + (defTac.zone ? RULES.zone : 0);
+    var counter = E.counterMul(defTac.rank[mi]) + (defTac.zone ? RULES.zone : 0);
     v *= counter * side.status * (1 + 0.01 * tacticLevel(side, 'def', pr.def));
     if (pr.intensity) v *= 1 + (pr.intensity - 2) * 0.04;
     return v;
@@ -630,11 +638,19 @@
     for (var t in sc) if (sc[t] > bs) { bs = sc[t]; best = t; }
     return best;
   };
+  // AI 选进攻战术：不总是选最适合的那套（否则 9 成 AI 都打强打内线，玩家只要摆内线防守就行），
+  // 按适合程度加权随机：差 5% 的战术约 1/3 的概率，差 10% 约 1/8，差 15% 以上基本不选
+  E.aiPickOff = function (players, lineup, kind) {
+    var sc = E.offScores(players, lineup, kind), ids = Object.keys(sc), best = 0;
+    ids.forEach(function (t) { best = Math.max(best, sc[t]); });
+    if (best <= 0) return E.suggestOff(players, lineup, kind);
+    return ids[U.wpick(ids.map(function (t) { return Math.pow(sc[t] / best, 20); }))];
+  };
   // 防守战术对进攻战术的克制程度（>0 防守占优）
   E.counter = function (offId, defId) {
     var ot = OFF[offId], dt = DEF[defId], ws = [], tot = 0, s = 0, i;
     for (i = 0; i < 12; i++) { var w = rw(ot.rank[i]); ws.push(w * w); tot += w * w; }
-    for (i = 0; i < 12; i++) s += ws[i] / tot * (1.15 - 0.03 * (dt.rank[i] - 1));
+    for (i = 0; i < 12; i++) s += ws[i] / tot * E.counterMul(dt.rank[i]);
     return s - 1;
   };
 })(window.XBA);

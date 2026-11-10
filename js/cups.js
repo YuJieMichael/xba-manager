@@ -22,7 +22,7 @@
     var lu = E.autoLineup(ps, 'street');
     return {
       id: 'tmp' + U.ri(1, 1e9), name: name || (U.pick(X.TEAM_CITY) + U.pick(X.STREET_NICK)), color: U.pick(X.JERSEY_COLORS).c, kind: 'street', temp: true,
-      players: ps, presets: [{ name: '先发', lineup: lu, off: E.suggestOff(ps, lu, 'street'), def: U.pick(X.STREET_DEF), intensity: 2 }],
+      players: ps, presets: [{ name: '先发', lineup: lu, off: E.aiPickOff(ps, lu, 'street'), def: U.pick(X.STREET_DEF), intensity: 2 }],
       config: { start: 0, lead5: -1, lead10: -1, trail5: -1, trail10: -1 }, prof: { off: {}, def: {} }, status: 1
     };
   };

@@ -4,6 +4,8 @@
   // 旧存档补字段
   function migrate(S) {
     S.awards = S.awards || {};
+    // 旧存档的生涯履历瘦身
+    Object.keys(S.players || {}).forEach(function (id) { var p = S.players[id]; if (p.career) p.career = p.career.map(function (c) { return c.stats && c.stats.zn ? { season: c.season, team: c.team, stats: X.P.careerStats(c.stats) } : c; }); });
     S.hof = S.hof || [];
     if (S.user.doubleActive) S.user.doubleUntil = (S.dayNo || 0) + 3;
     delete S.user.doubleActive;

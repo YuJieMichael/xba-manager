@@ -52,7 +52,7 @@
       var tot = U.sum(ws);
       h += '<tr><th>' + ot.cn + '</th>' + defs.map(function (d) {
         var dt = E.DEF[d], s = 0;
-        for (var i = 0; i < 12; i++) s += ws[i] / tot * (1.15 - 0.03 * (dt.rank[i] - 1));
+        for (var i = 0; i < 12; i++) s += ws[i] / tot * X.Engine.counterMul(dt.rank[i]);
         var pct = Math.round((s - 1) * 100);
         var cls = pct >= 6 ? 'c3' : pct >= 2 ? 'c2' : pct <= -6 ? 'c-3' : pct <= -2 ? 'c-2' : 'c0';
         return '<td class="' + cls + '">' + (pct > 0 ? '+' : '') + pct + '%</td>';

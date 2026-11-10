@@ -86,8 +86,8 @@ XBA.rankW = function (r) { return (12 - r) / 11; };
 
 // 联赛金字塔
 XBA.LEVELS = [
-  { level: 1, leagues: 1, cap: 300000, avg: 70, prize: [100000000, 30000000, 15000000] },
-  { level: 2, leagues: 2, cap: 200000, avg: 58, prize: [20000000, 8000000, 4000000] },
+  { level: 1, leagues: 1, cap: 300000, avg: 70, prize: [40000000, 15000000, 8000000] },
+  { level: 2, leagues: 2, cap: 200000, avg: 58, prize: [12000000, 5000000, 2500000] },
   { level: 3, leagues: 4, cap: 140000, avg: 46, prize: [5000000, 2000000, 1000000] },
   { level: 4, leagues: 8, cap: 95000, avg: 32, prize: [1000000, 500000, 250000] }
 ];

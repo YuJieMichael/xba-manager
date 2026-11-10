@@ -377,15 +377,17 @@
     return final;
   };
   M.setupDraft = function (S, order) {
-    var pool = [];
+    // 赛季里已经在「新秀卡」翻过牌的那批新秀优先进入选秀池
+    var pool = X.Story ? X.Story.takeProspects(S) : [];
     var n = order.length + 12;
-    for (var i = 0; i < n; i++) {
+    for (var i = pool.length; i < n; i++) {
       var tier = U.chance(0.06) ? 18 : U.chance(0.25) ? 8 : 0;
       var p = P.gen(S, { pos: X.POS[i % 5], age: U.ri(19, 21), ovr: U.rf(22, 38) + tier });
       p.draft = true;
       pool.push(p.id);
     }
     S.draft = { pool: pool, order: order, idx: 0, done: false, picks: [], wo: { pts: 3 + (X.Manager.lv(S, 'eye') >= 3 ? 1 : 0), seen: {} } };
+    pool.forEach(function (id) { var p = S.players[id]; if (p && p.seen && p.seen.pot) S.draft.wo.seen[id] = true; });
     M.draftRun(S);
   };
   function draftScore(S, p) { return P.ovr(p) + P.potRemain(p) * 0.6 + U.rf(0, 4); }

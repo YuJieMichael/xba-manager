@@ -85,7 +85,7 @@
       nslots: kind === 'pro' ? 5 : 3, cols: kind === 'pro' ? PRO_COLS : STREET_COLS,
       roster: cfg.players.filter(function (p) { return p.inj <= 0; }),
       presets: cfg.presets, config: cfg.config, prof: cfg.prof || { off: {}, def: {} },
-      status: (cfg.status == null ? 1 : cfg.status) * P.chemistry(cfg.players), home: !!cfg.home,
+      status: (cfg.status == null ? 1 : cfg.status) * P.chemistry(cfg.players), home: !!cfg.home, homeAdv: cfg.homeAdv || 1.02,
       court: [], curPreset: -1, pts: 0, fouls: 0, box: {}, trailLock: false, leadLock: false,
       used: { off: {}, def: {} }, form: 1 + U.gauss() * 0.035
     };
@@ -189,7 +189,7 @@
     // 擅长战术：出手人擅长 +4%，场上每多一个擅长的人 +1%
     if (sh.favs && sh.favs.indexOf(pr.off) >= 0) v *= 1.04;
     v *= 1 + 0.01 * side.court.filter(function (p) { return p.favs && p.favs.indexOf(pr.off) >= 0; }).length;
-    v *= side.status * (1 + 0.01 * tacticLevel(side, 'off', pr.off)) * (side.home ? 1.02 : 1);
+    v *= side.status * (1 + 0.01 * tacticLevel(side, 'off', pr.off)) * (side.home ? side.homeAdv : 1);
     if (pr.intensity) v *= 1 + (pr.intensity - 2) * 0.04;
     return v;
   }

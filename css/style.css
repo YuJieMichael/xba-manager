@@ -353,3 +353,20 @@ table.grid.box td, table.grid.box th { padding: 2px 4px; }
 .fac { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 6px 8px; } .fac-n { font-weight: bold; margin-bottom: 2px; } .fac .btn { margin-top: 4px; }
 .life-i { display: inline-block; margin: 2px 6px 2px 0; padding: 1px 6px; border-radius: 10px; border: 1px solid #ddd; font-size: 12px; }
 .life-i.on { background: #ffe6b8; border-color: var(--org2); font-weight: bold; } .life-i.past { color: #aaa; }
+
+/* ===== 每日悬念 / 新秀卡 / 传承 ===== */
+.rv { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--cream2); } .rv:last-child { border-bottom: 0; }
+.rv-i { font-size: 20px; line-height: 1.2; }
+.ask { padding: 6px 0; border-bottom: 1px dashed var(--line); } .ask:last-child { border-bottom: 0; }
+.ask-o > div { margin-top: 4px; }
+.teaser { margin: 0; padding-left: 18px; } .teaser li { margin: 2px 0; }
+.pcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
+.pcard { border: 2px solid #c9b48a; border-radius: 8px; padding: 6px 8px; background: #fffdf8; }
+.pcard.r2 { box-shadow: 0 0 6px rgba(168, 85, 247, .45); } .pcard.r3 { box-shadow: 0 0 10px rgba(245, 158, 11, .7); background: #fffaf0; }
+.pc-h { font-weight: bold; } .pc-rar { color: #fff; border-radius: 4px; padding: 0 5px; margin-right: 4px; font-size: 11px; } .pc-rar.unk { background: #9a8670; }
+.pc-r { font-size: 12px; padding: 1px 0; } .pc-q { color: var(--muted); letter-spacing: 1px; } .pc-b { margin-top: 4px; }
+.htree { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+.hn { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: #fffdf8; } .hn.on { background: #f3fbe9; border-color: #8cc26a; }
+.sdex { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; }
+.sd { border: 1px solid var(--line); border-radius: 6px; padding: 6px 2px; opacity: .55; } .sd.on { opacity: 1; background: #fffaf0; } .sd-i { font-size: 22px; }
+@media (max-width: 480px) { .pcards { grid-template-columns: 1fr 1fr; } .sdex { grid-template-columns: repeat(4, 1fr); font-size: 11px; } }

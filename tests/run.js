@@ -69,6 +69,36 @@ test('累进所得税', function () {
   assert.strictEqual(W.incomeTax(1000000, false), 300000);
 });
 
+test('AI 交易报价不再用替补 + 现金凑数换核心', function () {
+  var X = require('./harness')(), TR = X.Trade, P = X.P, W = X.World;
+  var S = newWorld(X, 11), n = 0;
+  S.day = 1;
+  for (var i = 0; i < 3000; i++) {
+    S.tradeOffers = [];
+    TR.daily(S);
+    S.tradeOffers.forEach(function (o) {
+      n++;
+      var wantV = P.value(S.players[o.want]);
+      var vals = o.give.map(function (id) { return P.value(S.players[id]); });
+      assert.ok(Math.max.apply(null, vals) >= wantV * 0.45, '报价缺少核心球员');
+      assert.ok(TR.pkgValue(vals) + o.money >= wantV * 0.999, '报价低于身价');
+    });
+  }
+  assert.ok(n > 0, '一次报价都没有');
+  // 反过来：拿两个最差的球员换对方最好的球员，AI 不该答应
+  var pro = W.userPro(S), mine = W.teamPlayers(S, pro).sort(function (a, b) { return P.value(a) - P.value(b); });
+  var lg = S.leagues.find(function (l) { return l.teamIds.indexOf(pro.id) >= 0; });
+  var other = S.teams[lg.teamIds.find(function (id) { return id !== pro.id; })];
+  var star = W.teamPlayers(S, other).sort(function (a, b) { return P.value(b) - P.value(a); })[0];
+  var two = [mine[0], mine[1]], money = Math.max(0, Math.round(TR.aiValue(S, other, star, false) * 1.08 - U2(two)));
+  function U2(ps) { return ps.reduce(function (a, p) { return a + TR.aiValue(S, other, p, true); }, 0); }
+  S.user.money = 1e9;
+  var ev = TR.evaluate(S, other.id, two.map(function (p) { return p.id; }), [star.id], money);
+  if (!ev.err) assert.ok(!ev.ok, '两个替补 + 按总身价补足的现金就能换走球星');
+  console.log('   ' + n + ' 次报价全部合格');
+  X.U.seed(null);
+});
+
 test('AI 进攻战术不再一边倒（单一战术占比 < 65%）', function () {
   var X = require('./harness')(), W = X.World;
   X.U.seed(5);

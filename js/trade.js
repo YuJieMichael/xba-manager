@@ -16,6 +16,14 @@
     return P.value(p) * need * age;
   };
 
+  // 打包估值：篮球是看上场那几个人的，两个替补换不来一个核心。
+  // 最值钱的那个按全价，其余每人只按 60% 算（凑人头打折）
+  TR.DEPTH_F = 0.6;
+  TR.pkgValue = function (vals) {
+    vals = vals.slice().sort(function (a, b) { return b - a; });
+    return vals.length ? vals[0] + U.sum(vals.slice(1)) * TR.DEPTH_F : 0;
+  };
+
   // give：用户送出的球员；take：用户要的球员；money：用户额外付出的资金（负数 = 对方给你钱）
   TR.evaluate = function (S, tid, give, take, money) {
     var team = S.teams[tid], pro = W().userPro(S);
@@ -31,7 +39,8 @@
     var salOut = U.sum(gp.map(function (p) { return p.salary; })), salIn = U.sum(tp.map(function (p) { return p.salary; }));
     var payAfter = W().payroll(S, pro) - salOut + salIn;
     if (payAfter > W().cap(pro) && salIn > salOut) return { err: '交易后工资超过工资帽，超帽时只能换来总薪水更低的球员' };
-    var vin = U.sum(gp.map(function (p) { return TR.aiValue(S, team, p, true); })) + money;
+    // 对方收到的人按打包估值（凑数的打折），对方送出的人每个都要足价
+    var vin = TR.pkgValue(gp.map(function (p) { return TR.aiValue(S, team, p, true); })) + money;
     var vout = U.sum(tp.map(function (p) { return TR.aiValue(S, team, p, false); })) * 1.08;
     var gap = Math.round(vout - vin);
     return { ok: gap <= 0, gap: gap, vin: vin, vout: vout };
@@ -66,15 +75,21 @@
     var want = U.pick(mine);
     var teams = Object.keys(S.teams).map(function (k) { return S.teams[k]; }).filter(function (t) { return !t.isUser && t.kind === 'pro' && Math.abs(t.level - pro.level) <= 1 && t.playerIds.length >= 10; });
     if (!teams.length) return;
-    var team = U.pick(teams), target = TR.aiValue(S, team, want, true) * U.rf(0.85, 1.05);
+    var team = U.pick(teams), wantV = P.value(want);
+    // 报价至少要按你的视角（身价，凑数球员打折）给足，再多给一点溢价
+    var target = Math.max(wantV, TR.aiValue(S, team, want, true)) * U.rf(1.0, 1.12);
     var pool = W().teamPlayers(S, team).filter(function (p) { return !p.listing; }).sort(function (a, b) { return P.value(b) - P.value(a); });
-    var give = [], sum = 0;
+    // 必须有一个像样的核心球员（身价不低于你这名球员的 45%），否则不报价——不拿一堆替补 + 现金凑数
+    var core = pool.find(function (p) { var v = P.value(p); return v >= wantV * 0.45 && v <= target * 1.05; });
+    if (!core) return;
+    var give = [core.id], sum = P.value(core);
     for (var i = 0; i < pool.length && give.length < 2; i++) {
-      var v = TR.aiValue(S, team, pool[i], false);
+      if (pool[i] === core) continue;
+      var v = P.value(pool[i]) * TR.DEPTH_F;
       if (sum + v <= target * 1.02) { give.push(pool[i].id); sum += v; }
     }
-    var money = Math.max(0, Math.round((target - sum) / 10000) * 10000);
-    if (!give.length && money < 10000) return;
+    var money = Math.max(0, Math.ceil((target - sum) / 10000) * 10000);
+    if (money > target * 0.4) return; // 现金占大头的报价没诚意，不发
     S.tradeOffers.push({ id: U.uid(S, 'to'), team: team.id, want: want.id, give: give, money: money, expires: S.dayNo + 3 });
     W().msg(S, '📨 ' + team.name + ' 想要你的 ' + want.name + '，给出了交易报价，去「转会 → 球员交易」看看', 'market');
   };

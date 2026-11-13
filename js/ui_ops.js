@@ -134,9 +134,7 @@
       '<div class="trust"><b>精力</b><div class="bar"><i style="width:' + L.energy + '%;background:#4a8fd8"></i></div><span>' + Math.round(L.energy) + '</span></div>' +
       '<p class="small muted">精力每天消耗 3，亲自执教一场再多消耗 6，房子越好每天恢复越多。精力低于 40 时训练和执教效果打折；名气越高，签约和续约工资越便宜。</p>' +
       '<p>🏠 住所：' + item(O().HOUSES, 'house') + '</p><p>🚗 座驾：' + item(O().CARS, 'car') + '</p><p>' + UI.btn('去度假（2 万，精力回满）', 'vacation', {}, 'sm') + '</p>';
-    var i = h.indexOf('<div class="box"><div class="box-h">🔁 重生');
-    var box = UI.box('🏡 个人生活', life);
-    return i >= 0 ? h.slice(0, i) + box + h.slice(i) : h + box;
+    return h + UI.box('🏡 个人生活', life);
   };
   A.lifebuy = function (d) { UI.result(O().buy(UI.S, d.k, +d.i), '买下了！'); };
   A.vacation = function () { UI.result(O().vacation(UI.S), '度假回来，精神饱满'); };

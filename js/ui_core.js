@@ -121,6 +121,7 @@
     }).join('|') + '</div>';
     if (tab === 'ab') {
       h += UI.attrRows(S, p);
+      if (mine && !p.seen.hidden) h += '<div class="small">意识：<b class="' + (P.iqGrade(p) === '低' ? 'red' : P.iqGrade(p) === '高' ? 'ok' : '') + '">' + P.iqGrade(p) + '</b> <span class="muted">（查看隐藏属性可看确切数值）</span></div>';
       if (p.seen.hidden) {
         h += '<table class="attrs hidden-attrs">' + [['进攻意识', p.iq.off], ['防守意识', p.iq.def], ['团队意识', p.iq.team], ['领导能力', p.lead], ['毅力', p.will]].map(function (x) {
           return '<tr><td class="an">' + x[0] + '</td><td class="ab"><div class="bar"><i style="width:' + x[1] + '%;background:#7a5cc4"></i></div></td><td class="av">' + x[1].toFixed(1) + '</td></tr>';
@@ -144,6 +145,7 @@
       h += UI.btn('修改', 'editp', { pid: p.id }, 'sm');
       h += UI.btn('谈话', 'talk', { pid: p.id }, 'sm');
       if (S.user.items.physio > 0) h += UI.btn('理疗', 'physio', { pid: p.id }, 'sm');
+      if (!street) h += UI.btn('意识特训', 'iqcamp', { pid: p.id }, 'sm');
       if (!street) h += X.Awards.inHof(S, p.id) ? UI.btn('更新名人堂', 'hofadd', { pid: p.id }, 'sm') : UI.btn('入选名人堂', 'hofadd', { pid: p.id }, 'sm');
       if (!street && P.starReady(p) && (p.star || 0) < X.STAR_MAX) h += UI.btn('升星', 'starup', { pid: p.id }, 'sm on');
       h += '</div>';

@@ -265,6 +265,21 @@
     if (S.user.items.hidden > 0) S.user.items.hidden--; else if (S.user.coins >= 5) S.user.coins -= 5; else return UI.toast('需要「查看隐藏属性」道具或 5 游戏币', true);
     p.seen.hidden = true; UI.result(null, '已显示隐藏属性');
   };
+  A.iqcamp = function (d) {
+    var S = UI.S, p = S.players[d.pid], left = P.iqCampLeft(S, p);
+    UI.sel = p.id; UI.renderCard();
+    UI.modal('意识特训：' + esc(p.name), '<p>意识决定球员在场上的判断：进攻意识影响出手质量，防守意识影响防守和防守战术，团队意识影响传球配合和区域联防。综合差不多时，意识高的一方明显占优。</p>' +
+      '<p>每次特训 +4~6，费用随当前意识上升。本赛季还能特训 <b>' + left + '</b> 次（每赛季 ' + P.IQ_CAMP_MAX + ' 次）。当前资金 ' + UI.money(S.user.money) + '。</p>' +
+      ['off', 'def', 'team'].map(function (k) {
+        return '<p>' + P.IQ_CN[k] + ' <b>' + p.iq[k].toFixed(1) + '</b>　' + (left > 0 && p.iq[k] < 99 ? UI.btn('特训（' + U.money(P.iqCampCost(p, k)) + '）', 'iqcampdo', { pid: p.id, k: k }, 'sm') : '<span class="muted">—</span>') + '</p>';
+      }).join(''));
+  };
+  A.iqcampdo = function (d) {
+    var S = UI.S, p = S.players[d.pid], r = P.iqCamp(S, p, d.k);
+    if (r.err) return UI.toast(r.err, true);
+    UI.persist(); UI.render(); A.iqcamp(d);
+    UI.toast(p.name + ' ' + P.IQ_CN[d.k] + ' +' + r.gain.toFixed(1) + '，花费 ' + U.money(r.cost));
+  };
   A.physio = function (d) {
     var S = UI.S, p = S.players[d.pid];
     if (S.user.items.physio <= 0) return UI.toast('没有理疗道具', true);

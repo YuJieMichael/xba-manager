@@ -60,7 +60,7 @@
     if (m.kind === 'iso') v *= 0.8 + 0.4 * p.iq.off / 100;
     else if (m.kind === 'fb') v *= 0.9 + 0.2 * p.iq.off / 100;
     else v *= 0.85 + 0.3 * p.iq.team / 100;
-    return v * condF(p);
+    return v * condF(p) * (p._heat > 0 ? 1.25 : 1); // 微波炉：替补登场头几分钟手感火热
   }
 
   function defAbility(p, col) {
@@ -91,7 +91,7 @@
     };
     side.roster.forEach(function (p) {
       p._st = cfg.noStamina ? 100 : p.st;
-      p._out = false; p._pf = 0; p._sec = 0; p._rest = false;
+      p._out = false; p._pf = 0; p._sec = 0; p._rest = false; p._heat = 0;
       p._morale = cfg.morale || 1;
       p._foc = 1;
       P.favs(p);
@@ -124,11 +124,12 @@
 
   // 按预设填充场上阵容；不可用的球员由替补中最合适的顶上
   // 体能轮换：阵容里的球员体力低于 SUB_AT 时，替补席上更合适（按当前体力折算）的人顶上；歇到 BACK_AT 再回来
-  var SUB_AT = 80, BACK_AT = 92, SUB_TOL = 0.92, REST_TOL = 0.8;
+  var MICROWAVE_SEC = 240, SUB_AT = 80, BACK_AT = 92, SUB_TOL = 0.92, REST_TOL = 0.8;
   function needsRest(p) {
     if (p._rest && p._st >= BACK_AT) p._rest = false;
     return p._rest || p._st < SUB_AT;
   }
+  function hot(p) { return p._heat === MICROWAVE_SEC ? ' 🔥微波炉登场' : ''; }
   function fillCourt(side, lg, quiet) {
     var pr = preset(side), prev = side.court.slice(), used = {}, court = [];
     var inLineup = {};
@@ -159,17 +160,23 @@
       if (best) { court[s] = best; used[best.id] = 1; }
     }
     side.court = court;
+    // 微波炉：开场之后从板凳上来的，接下来 4 分钟手感火热
+    if (prev.length) court.forEach(function (p) {
+      if (p && p.persona === 'microwave' && prev.indexOf(p) < 0) {
+        p._heat = MICROWAVE_SEC;
+      }
+    });
     var hasLeader = court.some(function (p) { return p && p.persona === 'leader'; });
     side.roster.forEach(function (p) { p._boost = hasLeader && p.persona !== 'leader' ? 1.02 : 1; });
     if (!quiet && lg) {
       for (s = 0; s < side.nslots; s++) {
-        if (prev[s] && court[s] && prev[s] !== court[s]) lg(side.name + ' 换人：' + court[s].name + ' 替换 ' + prev[s].name, 'sub');
+        if (prev[s] && court[s] && prev[s] !== court[s]) lg(side.name + ' 换人：' + court[s].name + ' 替换 ' + prev[s].name + hot(court[s]), 'sub');
       }
     } else if (lg && prev.length) {
       // 战术没变时的换人只来自体能轮换（下场休息 / 歇够了回来）
       var ins = court.filter(function (p) { return p && prev.indexOf(p) < 0; });
       var outs = prev.filter(function (p) { return p && court.indexOf(p) < 0 && !p._out; });
-      ins.forEach(function (p, i) { if (outs[i]) lg(side.name + ' 换人：' + p.name + ' 替换 ' + outs[i].name + '（体能轮换）', 'sub'); });
+      ins.forEach(function (p, i) { if (outs[i]) lg(side.name + ' 换人：' + p.name + ' 替换 ' + outs[i].name + '（体能轮换）' + hot(p), 'sub'); });
     }
     return court.filter(Boolean).length >= side.nslots;
   }
@@ -320,11 +327,12 @@
         side.court.forEach(function (p) {
           onIds[p.id] = 1;
           p._sec += sec;
+          if (p._heat > 0) p._heat = Math.max(0, p._heat - sec);
           if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.013 + 0.0055 * (1 - p.a.sta / 100)) * (2 - TF(p, 'ironman', 0.25)) * drainMul * RULES.drain * (1 + (intensity - 2) * 0.25));
           side.used.off[preset(side).off] = (side.used.off[preset(side).off] || 0) + sec;
           side.used.def[preset(side).def] = (side.used.def[preset(side).def] || 0) + sec;
         });
-        side.roster.forEach(function (p) { if (!onIds[p.id] && !p._out) p._st = Math.min(100, p._st + sec * 0.015); });
+        side.roster.forEach(function (p) { if (!onIds[p.id]) { p._heat = 0; if (!p._out) p._st = Math.min(100, p._st + sec * 0.015); } });
       });
     }
 
@@ -383,7 +391,7 @@
       var ws = off.court.map(function (p, s) {
         var v = methodAbility(p, m) * rw(rk[off.cols[s]]);
         if (core != null && core >= 0 && core === s) v *= 1 + p.lead / 150;
-        return Math.pow(v, 1.7);
+        return Math.pow(v, 1.7) * (p._heat > 0 ? 1.6 : 1); // 微波炉手热，队友多找他
       });
       var ss = U.wpick(ws), sh = off.court[ss], dfd = def.court[ss];
       var helper = null;
@@ -604,7 +612,7 @@
       };
       [H, A].forEach(function (side) { side.roster.forEach(function (p) { res.stam[p.id] = p._st; }); });
       // 清理临时字段
-      [H, A].forEach(function (side) { side.roster.forEach(function (p) { delete p._st; delete p._rest; delete p._out; delete p._pf; delete p._sec; delete p._morale; delete p._tr; delete p._boost; delete p._foc; }); });
+      [H, A].forEach(function (side) { side.roster.forEach(function (p) { delete p._st; delete p._rest; delete p._heat; delete p._out; delete p._pf; delete p._sec; delete p._morale; delete p._tr; delete p._boost; delete p._foc; }); });
       return res;
     }
   };

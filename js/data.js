@@ -213,7 +213,7 @@ XBA.TRAIT_TIERS = [{ cn: '', f: 0 }, { cn: '铜', f: 0.5, c: '#b07a3a' }, { cn: 
 
 // 球员性格：生成时随机决定，影响训练、伤病、关键时刻和球队化学反应
 XBA.PERSONAS = [
-  { id: 'calm', cn: '平常心', icon: '🙂', w: 40, desc: '没有特别的影响' },
+  { id: 'calm', cn: '平常心', icon: '🙂', w: 34, desc: '没有特别的影响' },
   { id: 'leader', cn: '领袖', icon: '👑', w: 7, desc: '在场上时队友发挥 +2%；提升球队化学反应' },
   { id: 'glue', cn: '老好人', icon: '🤝', w: 9, desc: '更衣室润滑剂，提升球队化学反应' },
   { id: 'hothead', cn: '刺头', icon: '😤', w: 8, desc: '自己发挥 +3%；队里刺头超过一个就会降低化学反应' },
@@ -221,5 +221,6 @@ XBA.PERSONAS = [
   { id: 'lazy', cn: '懒散', icon: '😴', w: 7, desc: '训练效果 -20%，但体力恢复更快' },
   { id: 'bigheart', cn: '大心脏', icon: '💓', w: 7, desc: '关键时刻（第四节最后 5 分钟、加时分差 5 分内）发挥 +5%' },
   { id: 'glass', cn: '玻璃人', icon: '🥚', w: 6, desc: '受伤几率 ×1.8' },
-  { id: 'iron', cn: '铁打', icon: '🪨', w: 8, desc: '受伤几率减半' }
+  { id: 'iron', cn: '铁打', icon: '🪨', w: 8, desc: '受伤几率减半' },
+  { id: 'microwave', cn: '微波炉', icon: '🔥', w: 6, desc: '替补登场后手感立刻火热：每次从板凳上场的前 4 分钟进攻 +25%，也更敢要球出手（首发上场不触发）' }
 ];

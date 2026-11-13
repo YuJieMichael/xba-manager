@@ -463,8 +463,16 @@
     var err = P.canStarUp(S, p);
     UI.modal('升星：' + esc(p.name), '<p>当前星级：<span class="pstar">' + (star ? '★'.repeat(star) : '无') + '</span>　→　<span class="pstar">' + '★'.repeat(star + 1) + '</span></p>' +
       '<p>' + esc(p.name) + (P.isMaxed(p) ? ' 已经训满。' : ' 训满后才能升星。') + '升星会突破他的潜力上限：位置重要的能力上限 +10~14，次要能力 +6~9，其他 +4~6（最高可到 ' + X.ATTR_CAP + '）。</p>' +
-      '<p>需要升星卡 <b>' + need + '</b> 张，你有 <b class="' + (own < need ? 'red' : 'ok') + '">' + own + '</b> 张。' + (own < need ? '（可在道具商店购买，50 游戏币一张）' : '') + '</p>' +
+      '<p>需要升星卡 <b>' + need + '</b> 张，你有 <b class="' + (own < need ? 'red' : 'ok') + '">' + own + '</b> 张。' + (own < need ? '（50 游戏币一张）' + UI.btn('补齐差的 ' + (need - own) + ' 张（' + (need - own) * 50 + ' 游戏币）', 'starbuy', { pid: p.id, n: need - own }, 'sm on') : '') + '</p>' +
       '<p>' + (err ? '<span class="red">' + esc(err) + '</span> ' + UI.btn('去道具商店', 'go', { r: 'shop' }, 'sm') : UI.btn('确认升星', 'starupdo', { pid: p.id }, 'big')) + '</p>');
+  };
+  A.starbuy = function (d) {
+    var S = UI.S, it = X.ITEMS.find(function (x) { return x.id === 'starcard'; }), n = +d.n;
+    if (S.user.coins < it.price * n) return UI.toast('游戏币不足：需要 ' + it.price * n + '，你只有 ' + S.user.coins, true);
+    S.user.coins -= it.price * n;
+    S.user.items.starcard = (S.user.items.starcard || 0) + n;
+    UI.persist(); UI.render();
+    A.starup({ pid: d.pid });
   };
   A.starupdo = function (d) {
     var S = UI.S, p = S.players[d.pid];

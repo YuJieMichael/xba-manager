@@ -309,6 +309,16 @@
         p.m[k] = Math.max(p.a[k], p.m[k] * (1 - r));
       });
       msg = p.name + ' 年满 ' + p.age + ' 岁，能力出现衰退';
+    } else if (p.age < p.decline) {
+      // 还没到衰退年龄：每长一岁，潜力上限和能力都会自然涨一点（越年轻涨得越多）
+      var young = p.age <= 23 ? 1.6 : p.age <= 26 ? 1.2 : 0.8, up = 0;
+      X.ATTRS.forEach(function (k) {
+        var dm = U.rf(0.6, 1.4) * young, da = U.rf(0.3, 0.7) * young;
+        p.m[k] = Math.min(X.ATTR_CAP, p.m[k] + dm);
+        var na = Math.min(p.m[k], p.a[k] + da);
+        up += na - p.a[k]; p.a[k] = na;
+      });
+      if (up > 0.5) msg = p.name + ' 年满 ' + p.age + ' 岁，又成熟了一些，能力小幅成长（潜力上限也提高了）';
     }
     return msg;
   };

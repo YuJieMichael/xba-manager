@@ -99,16 +99,23 @@
       if (it.id === 'fund' && own > 0) use = UI.btn('使用', 'usefund', {}, 'sm');
       if (it.id === 'reset' && own > 0) use = UI.btn('洗职业队', 'usereset', { t: 'pro' }, 'sm') + ' ' + UI.btn('洗街球队', 'usereset', { t: 'street' }, 'sm');
       if (it.id === 'double') use = UI.doubleWidget();
-      return '<tr><td><b>' + it.cn + '</b></td><td class="small">' + it.desc + '</td><td>' + it.price + ' 游戏币</td><td>' + own + '</td><td>' + UI.btn('购买', 'buy', { id: it.id }, 'sm') + ' ' + use + '</td></tr>';
+      return '<tr><td><b>' + it.cn + '</b></td><td class="small">' + it.desc + '</td><td>' + it.price + ' 游戏币</td><td>' + own + '</td><td class="nowrap"><input id="buyn-' + it.id + '" type="number" min="1" step="1" value="1" style="width:56px"> ' + UI.btn('购买', 'buy', { id: it.id }, 'sm') + ' ' + UI.btn('×10', 'buy', { id: it.id, n: 10 }, 'sm') + ' ' + UI.btn('买满', 'buy', { id: it.id, n: 'max' }, 'sm') + ' ' + use + '</td></tr>';
     }).join('') + '</table>';
     return h;
   };
+  // 批量购买：d.n = 数量 / 'max'（游戏币能买多少买多少）；没给 d.n 就读输入框
   A.buy = function (d) {
     var S = UI.S, it = X.ITEMS.find(function (x) { return x.id === d.id; });
-    if (S.user.coins < it.price) return UI.toast('游戏币不足', true);
-    S.user.coins -= it.price;
-    if (it.id === 'select') S.user.selectCards += 1; else S.user.items[it.id] = (S.user.items[it.id] || 0) + 1;
-    UI.result(null, '购买了 ' + it.cn);
+    var afford = Math.floor(S.user.coins / it.price), n;
+    if (d.n === 'max') n = afford;
+    else if (d.n) n = +d.n;
+    else { var el = document.getElementById('buyn-' + it.id); n = Math.floor(+(el ? el.value : 1)); }
+    if (!(n > 0)) return UI.toast(afford ? '请输入购买数量' : '游戏币不足', true);
+    n = Math.min(n, 9999);
+    if (afford < n) return UI.toast('游戏币不足：买 ' + n + ' 个需要 ' + n * it.price + '，你只有 ' + S.user.coins + (afford ? '（最多能买 ' + afford + ' 个）' : ''), true);
+    S.user.coins -= it.price * n;
+    if (it.id === 'select') S.user.selectCards += n; else S.user.items[it.id] = (S.user.items[it.id] || 0) + n;
+    UI.result(null, '购买了 ' + it.cn + ' ×' + n + '，花费 ' + it.price * n + ' 游戏币');
   };
   A.recharge = function (d) {
     var v = d.v ? +d.v : Math.round(+document.getElementById('recharge-v').value);

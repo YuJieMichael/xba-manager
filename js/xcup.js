@@ -1,4 +1,4 @@
-// XBA杯职业大赛：分组预赛 → 分组决赛 → 冠军杯 / 优胜杯；预赛后三名打参赛杯
+// 篮途杯职业大赛：分组预赛 → 分组决赛 → 冠军杯 / 优胜杯；预赛后三名打参赛杯
 (function (X) {
   var U = X.U, E = X.Engine, C = {};
   X.XCup = C;
@@ -28,7 +28,7 @@
     fourth.sort(function (a, b) { return a.level - b.level || b.rec.w - a.rec.w; });
     fourth.slice(0, C.SIZE - ids.length).forEach(function (t) { ids.push(t.id); });
     S.xcupInvites = ids;
-    if (ids.indexOf(S.user.proId) >= 0) W().msg(S, '你的职业队获得了下赛季 XBA杯 的邀请函！', 'cup');
+    if (ids.indexOf(S.user.proId) >= 0) W().msg(S, '你的职业队获得了下赛季 篮途杯 的邀请函！', 'cup');
   };
 
   C.setup = function (S, giftUser) {
@@ -48,7 +48,7 @@
       pre: makeStage(groups), fin: null, ko: {}, result: null
     };
     S.xcupInvites = null;
-    if (S.xcup.user) W().msg(S, '第 ' + S.season + ' 赛季 XBA杯 开幕！你的职业队被分在预赛第 ' + (groupOf(S.xcup.pre, S.user.proId) + 1) + ' 组（第 2 轮起每天一场，可在「职业战术」设置杯赛战术板）', 'cup');
+    if (S.xcup.user) W().msg(S, '第 ' + S.season + ' 赛季 篮途杯 开幕！你的职业队被分在预赛第 ' + (groupOf(S.xcup.pre, S.user.proId) + 1) + ' 组（第 2 轮起每天一场，可在「职业战术」设置杯赛战术板）', 'cup');
   };
 
   function makeStage(groups) {
@@ -79,7 +79,7 @@
     if (isUser) {
       W().applyMatch(S, res, { noStamina: true });
       W().addProf(h.isUser ? h : a, h.isUser ? res.used.h : res.used.a, S);
-      r.mid = W().saveMatch(S, 'xcup', res, h, a, 'pro', { cup: 'XBA杯 ' + label, proTP: W().earnProTP(S, res, h.isUser) });
+      r.mid = W().saveMatch(S, 'xcup', res, h, a, 'pro', { cup: '篮途杯 ' + label, proTP: W().earnProTP(S, res, h.isUser) });
       out.xcupGames = (out.xcupGames || []).concat([{ mid: r.mid, label: label }]);
       X.Rivals.afterGame(S, h.isUser ? a.id : h.id, h.isUser ? res.hs - res.as : res.as - res.hs, 'cup');
       X.Manager.xp(S, (h.isUser ? res.hs > res.as : res.as > res.hs) ? 8 : 3);
@@ -154,7 +154,7 @@
 
   function award(S, key, place) {
     var cup = C.CUPS[key], prize = cup.prize[Math.min(place, cup.prize.length - 1)] || 0;
-    var name = 'XBA杯 ' + cup.cn + ' ' + (PLACE[place] || '参赛');
+    var name = '篮途杯 ' + cup.cn + ' ' + (PLACE[place] || '参赛');
     S.xcup.result = name;
     if (prize) W().earn(S, prize, name);
     if (place <= 1) S.user.trophies.push({ season: S.season, name: '第' + S.season + '赛季 ' + name });
@@ -177,8 +177,8 @@
         xc.fin = makeStage(fg);
         xc.ko.part = makeKO(sp.bottom);
         xc.stage = 'fin';
-        if (sp.bottom.indexOf(S.user.proId) >= 0) W().msg(S, 'XBA杯分组预赛结束：你的球队未能出线，进入参赛杯', 'cup');
-        else if (xc.user) W().msg(S, 'XBA杯分组预赛结束：你的球队出线，进入分组决赛！', 'cup');
+        if (sp.bottom.indexOf(S.user.proId) >= 0) W().msg(S, '篮途杯分组预赛结束：你的球队未能出线，进入参赛杯', 'cup');
+        else if (xc.user) W().msg(S, '篮途杯分组预赛结束：你的球队出线，进入分组决赛！', 'cup');
       }
     } else if ((r = C.FIN_DAYS.indexOf(d)) >= 0 && xc.stage === 'fin') {
       playGroupRound(S, xc.fin, r, '分组决赛', out);
@@ -187,15 +187,15 @@
         xc.ko.champ = makeKO(sf.top);
         xc.ko.win = makeKO(sf.bottom);
         xc.stage = 'ko';
-        if (sf.top.indexOf(S.user.proId) >= 0) W().msg(S, 'XBA杯分组决赛结束：你的球队晋级冠军杯！', 'cup');
-        else if (sf.bottom.indexOf(S.user.proId) >= 0) W().msg(S, 'XBA杯分组决赛结束：你的球队进入优胜杯', 'cup');
+        if (sf.top.indexOf(S.user.proId) >= 0) W().msg(S, '篮途杯分组决赛结束：你的球队晋级冠军杯！', 'cup');
+        else if (sf.bottom.indexOf(S.user.proId) >= 0) W().msg(S, '篮途杯分组决赛结束：你的球队进入优胜杯', 'cup');
       }
     } else if (C.KO_DAYS.indexOf(d) >= 0 && xc.stage === 'ko') {
       ['champ', 'win', 'part'].forEach(function (k) { playKO(S, k, out); });
       if (xc.ko.champ.done && xc.ko.win.done && xc.ko.part.done) {
         xc.stage = 'done';
         var ch = S.teams[xc.ko.champ.champion];
-        W().msg(S, '第 ' + S.season + ' 赛季 XBA杯 冠军杯冠军：' + (ch ? ch.name : '?'), 'cup');
+        W().msg(S, '第 ' + S.season + ' 赛季 篮途杯 冠军杯冠军：' + (ch ? ch.name : '?'), 'cup');
       }
     }
   };

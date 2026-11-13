@@ -1,33 +1,18 @@
-// 启动：读取存档
+// 启动：读取存档、注册离线缓存、检测新版本
 (function (X) {
   var UI = X.UI;
-  // 旧存档补字段
-  function migrate(S) {
-    S.awards = S.awards || {};
-    // 旧存档的生涯履历瘦身
-    Object.keys(S.players || {}).forEach(function (id) { var p = S.players[id]; if (p.career) p.career = p.career.map(function (c) { return c.stats && c.stats.zn ? { season: c.season, team: c.team, stats: X.P.careerStats(c.stats) } : c; }); });
-    S.hof = S.hof || [];
-    if (S.user.doubleActive) S.user.doubleUntil = (S.dayNo || 0) + 3;
-    delete S.user.doubleActive;
-    // 名人堂只收职业球员
-    S.hof = S.hof.filter(function (h) { var p = S.players[h.pid], t = p && p.teamId && S.teams[p.teamId]; return h.kind ? h.kind === 'pro' : !(t && t.kind === 'street'); });
-    if (S.user.onboarded) {
-      var pro = S.teams[S.user.proId];
-      if (pro && !pro.boards.cup) pro.boards.cup = JSON.parse(JSON.stringify(pro.boards.league));
-      if (!S.xcup && S.day <= 1) X.XCup.setup(S, true);
-      if (!S.user.goals || S.user.goals.season !== S.season) X.Goals.newSeason(S);
-      X.Alliance.init(S);
-      if (!S.meta) X.Ops.newSeasonRules(S); else X.Ops.applyRules(S);
-      // 街球训练点改为全队共用
-      if (S.user.streetTP == null) { S.user.streetTP = 0; Object.keys(S.players).forEach(function (id) { var p = S.players[id]; if (p.tp) { S.user.streetTP += p.tp; p.tp = 0; } }); }
-      Object.keys(S.players).forEach(function (id) { X.P.persona(S.players[id]); });
-      // 新性格「微波炉」：旧存档里一部分平常心球员转成微波炉
-      if (!S.migMicrowave) { S.migMicrowave = true; Object.keys(S.players).forEach(function (id) { var p = S.players[id]; if (p.persona === 'calm' && Math.random() < 0.15) p.persona = 'microwave'; }); }
-    }
-  }
+
   function boot() {
     X.Save.load().then(function (S) {
-      if (S && S.user && S.players) { UI.S = S; migrate(S); }
+      if (X.Migrate.valid(S)) {
+        if (X.Migrate.tooNew(S)) {
+          // 旧页面读到了新版本的存档：不读档，避免把存档写坏
+          document.getElementById('app').innerHTML = '<div class="loading">这个存档来自更新的游戏版本。<br>' + '<button class="btn" onclick="location.reload()">刷新页面获取新版本</button></div>';
+          return;
+        }
+        UI.S = X.Migrate.run(S);
+        UI.persist();
+      }
       UI.route = 'home';
       document.getElementById('app').innerHTML = '';
       UI.render();
@@ -35,7 +20,34 @@
       console.error(e);
       document.getElementById('app').innerHTML = '';
       UI.render();
+      UI.reportError(e);
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+
+  // ===== 离线缓存（只在 http/https 下可用，双击打开的 file:// 不注册）=====
+  var online = /^https?:$/.test(location.protocol);
+  if (online && 'serviceWorker' in navigator) window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('离线缓存注册失败', e); }); });
+
+  // ===== 新版本检测：比较 version.json 和当前页面的版本号 =====
+  var shown = false;
+  function checkUpdate() {
+    if (!online || shown) return;
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.version || j.version === X.VERSION || shown) return;
+      shown = true;
+      var bar = document.createElement('div');
+      bar.className = 'update-bar';
+      bar.innerHTML = '🆕 新版本 ' + j.version + ' 已发布（当前 ' + X.VERSION + '）<button class="btn sm on">刷新更新</button><button class="btn sm">稍后</button>';
+      bar.querySelectorAll('button')[0].onclick = function () {
+        var go = function () { location.reload(); };
+        if (UI.S) X.Save.save(UI.S).then(go, go); else go();
+      };
+      bar.querySelectorAll('button')[1].onclick = function () { bar.remove(); };
+      document.body.appendChild(bar);
+    }).catch(function () { /* 离线时忽略 */ });
+  }
+  window.addEventListener('load', function () { setTimeout(checkUpdate, 3000); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) checkUpdate(); });
+  setInterval(checkUpdate, 30 * 60 * 1000);
 })(window.XBA);

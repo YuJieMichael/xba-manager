@@ -8,10 +8,10 @@
   UI.ob = { step: 1, manager: '', teamName: '', color: '#c8102e', pro: {}, street: {} };
   V.onboard = function () {
     var S = UI.S, ob = UI.ob;
-    var h = '<div class="ob"><div class="ob-logo">🏀 XBA篮球经理 <small>单机复刻版</small></div><div class="ob-steps">' +
+    var h = '<div class="ob"><div class="ob-logo">🏀 篮途经理 <small>从街头到超级联赛</small></div><div class="ob-steps">' +
       ['球队命名', '挑选职业队', '挑选街球队', '领取资格证'].map(function (s, i) { return '<span class="' + (ob.step === i + 1 ? 'on' : ob.step > i + 1 ? 'done' : '') + '">' + (i + 1) + '. ' + s + '</span>'; }).join('') + '</div>';
     if (!S) {
-      h += '<div class="box"><div class="box-h">新手学堂</div><div class="box-b"><p>欢迎来到 XBA！这是 2006 年网页游戏《XBA篮球经理》的单机复刻版，其他球队由 AI 经理运营。</p>' +
+      h += '<div class="box"><div class="box-h">新手学堂</div><div class="box-b"><p>欢迎来到篮途经理！这是一款单机篮球经营游戏，其他球队由 AI 经理运营。</p>' +
         '<p><b>选择难度开始新游戏：</b></p><div class="diffs">' + X.DIFF_ORDER.map(function (k) { var d = X.DIFFS[k]; return '<div class="diff-c" data-act="obnew" data-diff="' + k + '"><b>' + d.cn + '</b><span>' + d.desc + '</span></div>'; }).join('') + '</div><p class="muted">已有存档？到「存档设置」可导入；或刷新页面自动读取浏览器中的存档。</p>' +
         '<p>' + UI.btn('导入存档文件', 'importsave') + '</p></div></div></div>';
       return h;
@@ -36,13 +36,13 @@
         return '<tr class="' + (on ? 'sel' : '') + '"><td><input type="checkbox" data-change="obpick" data-pid="' + id + '"' + (on ? ' checked' : '') + '></td><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + UI.stars(P.stars(p)) + '</td>' + (pro ? '<td>' + U.money(P.salaryFor(p)) + '</td>' : '') + '<td>' + U.money(p.price) + '</td></tr>';
       }).join('');
       h += UI.box((pro ? '第二步：挑选职业队球员（需 ' + need + ' 名）' : '第三步：挑选街球队球员（需 ' + need + ' 名）'),
-        '<p class="tip">' + (pro ? '选人时要综合考虑身体条件、综合水平和年龄。和 NBA 一样，XBA 最奇缺的是<b>中锋</b>！这笔选人资金系统只给一次，尽量花光。' : '街球队用于培养年轻球员。年轻球员可塑性强，能力相近时一定选年龄小的。潜力星级越高，成长空间越大。') + '</p>' +
+        '<p class="tip">' + (pro ? '选人时要综合考虑身体条件、综合水平和年龄。和 NBA 一样，联盟里最奇缺的是<b>中锋</b>！这笔选人资金系统只给一次，尽量花光。' : '街球队用于培养年轻球员。年轻球员可塑性强，能力相近时一定选年龄小的。潜力星级越高，成长空间越大。') + '</p>' +
         '<div class="ob-budget">已选 <b>' + n + '</b>/' + need + '　花费 ' + UI.money(spent) + ' / 预算 ' + UI.money(budget) + '　剩余 <b class="' + (spent > budget ? 'red' : '') + '">' + U.money(budget - spent) + '</b></div>' +
         '<table class="grid"><tr><th></th><th>姓名</th><th>年龄</th><th>位置</th><th>身高</th><th>体重</th><th>综合</th><th>潜力</th>' + (pro ? '<th>薪水/轮</th>' : '') + '<th>价格</th></tr>' + rows + '</table>' +
         '<p>' + UI.btn('上一步', 'obnext', { s: ob.step - 1 }) + ' ' + UI.btn('下一步', 'obnext', { s: ob.step + 1 }, 'big') + '</p>');
     } else {
       var pc = '#c8102e';
-      h += UI.box('第四步：领取《XBA篮球经理资格证》', '<div class="cert"><div class="cert-t">XBA 篮球经理资格证</div><p>兹证明 <b>' + esc(ob.manager) + '</b> 经理</p><p>执掌职业队 <b style="color:' + ob.color + '">' + esc(ob.teamName) + '</b></p><p>街球队 <b>' + esc(ob.teamName) + '街球队</b></p><p class="muted">启动资金 50 万 · 新人杯邀请函 20 张</p></div>' +
+      h += UI.box('第四步：领取《篮途经理资格证》', '<div class="cert"><div class="cert-t">篮途经理资格证</div><p>兹证明 <b>' + esc(ob.manager) + '</b> 经理</p><p>执掌职业队 <b style="color:' + ob.color + '">' + esc(ob.teamName) + '</b></p><p>街球队 <b>' + esc(ob.teamName) + '街球队</b></p><p class="muted">启动资金 50 万 · 新人杯邀请函 20 张</p></div>' +
         '<p>' + UI.btn('上一步', 'obnext', { s: 3 }) + ' ' + UI.btn('领取资格证，开始游戏！', 'obfinish', {}, 'big') + '</p>');
     }
     return h + '</div>';
@@ -141,7 +141,7 @@
   }
   UI.standingsTable = standingsTable;
 
-  var TYPE_CN = { league: '职业联赛', cup: '街球杯赛', train: '训练赛', friendly: '友谊赛', show: '表演赛', wk: '胜者为王', xcup: 'XBA杯', playoff: '季后赛', allstar: '全明星赛', challenge: '联盟挑战' };
+  var TYPE_CN = { league: '职业联赛', cup: '街球杯赛', train: '训练赛', friendly: '友谊赛', show: '表演赛', wk: '胜者为王', xcup: '篮途杯', playoff: '季后赛', allstar: '全明星赛', challenge: '联盟挑战' };
   function matchList(S, list) {
     return '<table class="grid"><tr><th>时间</th><th>类型</th><th>主队</th><th>比分</th><th>客队</th><th></th></tr>' + list.map(function (m) {
       var meH = S.teams[m.home.id] && S.teams[m.home.id].isUser, meA = S.teams[m.away.id] && S.teams[m.away.id].isUser;
@@ -332,7 +332,7 @@
     } else {
       var pro = W().userPro(S), pps = W().teamPlayers(S, pro);
       var ptr = pro.staff.trainer, pcost = P.proTrainCost(ptr), pool = S.user.proTP || 0;
-      h += '<p class="tip">职业队每场比赛（联赛、XBA杯、表演赛）会按上场时间和表现获得训练点，全部汇总到<b>职业队训练点</b>里，由你分给任意球员加点（每次 ' + pcost + ' 点，一次最多 +3）。另外每名球员还可以安排一个<b>每日训练项目</b>，第二天自动生效。' + (ptr ? '训练员 ' + esc(ptr.name) + '（' + ptr.level + '级）会提高训练效果、节省训练点。' : '<b class="red">没有训练员，训练效果较差。</b>') + '</p>';
+      h += '<p class="tip">职业队每场比赛（联赛、篮途杯、表演赛）会按上场时间和表现获得训练点，全部汇总到<b>职业队训练点</b>里，由你分给任意球员加点（每次 ' + pcost + ' 点，一次最多 +3）。另外每名球员还可以安排一个<b>每日训练项目</b>，第二天自动生效。' + (ptr ? '训练员 ' + esc(ptr.name) + '（' + ptr.level + '级）会提高训练效果、节省训练点。' : '<b class="red">没有训练员，训练效果较差。</b>') + '</p>';
       h += '<div class="sumline">职业队训练点：<b class="money">' + pool + '</b>　' + UI.btn('全队一键加点', 'proautoall', {}, 'big') + ' ' + UI.btn('全队理疗', 'physioall', { t: 'pro' }, 'sm') + '　每日训练：' + UI.btn('按位置重点', 'protrainall', { k: 'auto' }, 'sm') + ' ' + UI.btn('全部休息', 'protrainall', { k: 'rest' }, 'sm') + '</div>' + UI.tpExchange(S);
       h += '<table class="grid train"><tr><th>姓名</th><th>年龄</th><th>位置</th><th>体力</th><th>综合</th>' + X.ATTRS.map(function (k) { return '<th>' + X.ATTR_CN[k] + '</th>'; }).join('') + '<th>每日训练</th><th>潜力剩余</th><th></th></tr>' + pps.map(function (p) {
         var vis = P.potVisible(S, p);
@@ -599,7 +599,7 @@
     var h = UI.box('我的荣誉', S.user.trophies.length ? '<div class="trophies">' + S.user.trophies.slice().reverse().map(function (t) {
       return '<div class="trophy">🏆<div>' + esc(t.name) + '</div><span class="muted">第 ' + t.season + ' 赛季</span></div>';
     }).join('') + '</div>' : '<span class="muted">还没有奖杯，加油！</span>');
-    h += UI.box('历届联赛冠军', S.history.length ? '<table class="grid"><tr><th>赛季</th><th>XBA 超级联赛冠军</th></tr>' + S.history.map(function (x) {
+    h += UI.box('历届联赛冠军', S.history.length ? '<table class="grid"><tr><th>赛季</th><th>篮途超级联赛冠军</th></tr>' + S.history.map(function (x) {
       return '<tr><td>第 ' + x.season + ' 赛季</td><td>' + esc(x.champions[0].team) + (x.champions[0].isUser ? ' 🏆' : '') + '</td></tr>';
     }).join('') + '</table>' : '<span class="muted">第一个赛季还没结束</span>');
     return h;

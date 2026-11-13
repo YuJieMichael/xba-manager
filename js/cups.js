@@ -204,7 +204,7 @@
     var me = W().sideCfg(S, u, 'other', { home: home }), them = W().sideCfg(S, opp, 'league', { home: !home });
     var opts = { kind: 'pro', log: true, injuries: !friendly, noStamina: friendly };
     var res = home ? E.play(me, them, opts) : E.play(them, me, opts);
-    var mid = W().saveMatch(S, type, res, home ? u : opp, home ? opp : u, 'pro', type === 'show' ? { proTP: W().earnProTP(S, res, home) } : {});
+    var mid = W().saveMatch(S, type, res, home ? u : opp, home ? opp : u, 'pro', type === 'show' ? { proTP: W().earnProTP(S, res, home, true) } : {});
     W().applyMatch(S, res, { noStamina: friendly });
     // AI 对手也消耗体力（友谊赛除外）
     var won = home ? res.hs > res.as : res.as > res.hs;

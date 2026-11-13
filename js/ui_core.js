@@ -10,7 +10,7 @@
     { title: '俱乐部', short: '俱乐部', icon: '🏠', items: [['home', '俱乐部首页'], ['msgs', '系统消息'], ['trophies', '荣誉室'], ['datacenter', '数据中心'], ['ops', '俱乐部运营'], ['manager', '经理生涯']] },
     { title: '球队管理', icon: '👥', items: [['players', '球员管理'], ['training', '球员训练'], ['staff', '职员管理'], ['arena', '球场建设'], ['finance', '球队财政']] },
     { title: '战术设定', icon: '📋', items: [['tac_pro', '职业战术'], ['tac_street', '街球战术']] },
-    { title: '赛程管理', icon: '🏆', items: [['league', '职业联赛'], ['xcup', 'XBA杯'], ['allstar', '全明星'], ['cups', '街球杯赛']] },
+    { title: '赛程管理', icon: '🏆', items: [['league', '职业联赛'], ['xcup', '篮途杯'], ['allstar', '全明星'], ['cups', '街球杯赛']] },
     { title: '竞技中心', icon: '🏀', items: [['center', '训练中心'], ['wk', '胜者为王'], ['alliance', '篮球联盟'], ['mymatches', '我的比赛']] },
     { title: '转会市场', icon: '💰', items: [['market', '转会市场'], ['trade', '球员交易'], ['draft', '职业选秀']] },
     { title: '其他', icon: '🛒', items: [['shop', '道具商店'], ['manual', '经理手册'], ['settings', '存档设置']] }
@@ -204,9 +204,9 @@
     }
     var view = UI.views[UI.route] || UI.views.home;
     var main;
-    try { main = view(UI.arg); } catch (e) { console.error(e); main = '<div class="err">页面出错：' + esc(e.message) + '</div>'; }
+    try { main = view(UI.arg); } catch (e) { main = '<div class="err">页面出错：' + esc(e.message) + '</div>'; setTimeout(function () { UI.reportError(e, '打开页面 ' + UI.route); }, 0); }
     if (!document.getElementById('main')) {
-      app.innerHTML = '<header class="top"><div class="logo"><span class="logo-ball">🏀</span>XBA篮球经理<small>XTREME BASKETBALL ASSOCIATION · 单机复刻版</small></div></header>' +
+      app.innerHTML = '<header class="top"><div class="logo"><span class="logo-ball">🏀</span>篮途经理<small>HOOP ROAD MANAGER · 从街头到超级联赛</small></div></header>' +
         '<div class="statusbar" id="statusbar"></div><div class="body"><nav class="left" id="nav"></nav><main class="center" id="main"></main><aside class="right" id="card"></aside></div><div id="cardmask" data-act="closecard"></div>' +
         '<div id="toast"></div><div id="modal"></div>';
     }
@@ -309,6 +309,40 @@
     var m = document.getElementById('modal');
     m.innerHTML = '<div class="mask" data-act="closemodal"></div><div class="dlg"><div class="box-h">' + title + '<span class="x" data-act="closemodal">✕</span></div><div class="dlg-b">' + html + '</div></div>';
   };
+  // ===== 出错报告：给玩家一份可复制的错误信息 + 导出存档，方便反馈 =====
+  UI.errorText = function (err, where) {
+    var S = UI.S;
+    return ['篮途经理 错误报告', '版本：' + X.VERSION + '（存档版本 ' + (S ? S.saveVer : '-') + '）',
+      '位置：' + (where || '-') + '　页面：' + (UI.route || '-'),
+      '进度：' + (S ? '第 ' + S.season + ' 赛季 第 ' + S.day + ' 天' : '无存档'),
+      '浏览器：' + navigator.userAgent, '时间：' + new Date().toISOString(),
+      '错误：' + (err && err.message || String(err)), (err && err.stack || '').split('\n').slice(0, 8).join('\n')].join('\n');
+  };
+  UI.reportError = function (err, where) {
+    console.error(err);
+    if (UI._errAt && Date.now() - UI._errAt < 5000) return;
+    UI._errAt = Date.now();
+    var txt = UI.errorText(err, where);
+    var box = document.getElementById('err-report');
+    if (!box) { box = document.createElement('div'); box.id = 'err-report'; document.body.appendChild(box); }
+    box.innerHTML = '<div class="mask"></div><div class="dlg"><div class="box-h">😵 游戏出错了<span class="x" data-er="close">✕</span></div><div class="dlg-b">' +
+      '<p>' + esc(err && err.message || String(err)) + '</p><p class="small muted">你的存档没有丢。可以先关闭这个窗口继续玩；如果反复出现，请把下面的错误信息和存档文件发给作者。</p>' +
+      '<textarea readonly style="width:100%;height:120px;font-size:11px">' + esc(txt) + '</textarea><p>' +
+      '<button class="btn sm on" data-er="copy">复制错误信息</button> ' + (UI.S ? '<button class="btn sm" data-er="export">导出存档</button> ' : '') + '<button class="btn sm" data-er="close">关闭</button></p></div></div>';
+    box.onclick = function (e) {
+      var b = e.target.closest('[data-er]'); if (!b) return;
+      var k = b.getAttribute('data-er');
+      if (k === 'close') box.innerHTML = '';
+      if (k === 'export') X.Save.exportFile(UI.S);
+      if (k === 'copy') {
+        var ta = box.querySelector('textarea');
+        (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { UI.toast('已复制'); }, function () { ta.select(); try { document.execCommand('copy'); UI.toast('已复制'); } catch (x) { UI.toast('请手动全选复制', true); } });
+      }
+    };
+  };
+  window.addEventListener('error', function (e) { if (e.error) UI.reportError(e.error, '全局'); });
+  window.addEventListener('unhandledrejection', function (e) { UI.reportError(e.reason, '异步'); });
+
   UI.closeModal = function () { var m = document.getElementById('modal'); if (m) m.innerHTML = ''; };
 
   UI.go = function (r, arg) {
@@ -350,12 +384,12 @@
     var fn = UI.acts[a];
     if (!fn) return;
     e.preventDefault();
-    try { fn(el.dataset, el, e); } catch (err) { console.error(err); UI.toast('出错了：' + err.message, true); }
+    try { fn(el.dataset, el, e); } catch (err) { UI.reportError(err, '点击 ' + a); }
   });
   document.addEventListener('change', function (e) {
     var el = e.target.closest('[data-change]');
     if (!el) return;
     var fn = UI.acts[el.getAttribute('data-change')];
-    if (fn) { try { fn(el.dataset, el, e); } catch (err) { console.error(err); UI.toast('出错了：' + err.message, true); } }
+    if (fn) { try { fn(el.dataset, el, e); } catch (err) { UI.reportError(err, '修改 ' + el.getAttribute('data-change')); } }
   });
 })(window.XBA);

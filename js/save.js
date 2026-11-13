@@ -64,7 +64,7 @@
     var blob = new Blob([SV.serialize(S)], { type: 'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'xba-存档-第' + S.season + '赛季.json';
+    a.download = '篮途经理-存档-第' + S.season + '赛季.json';
     document.body.appendChild(a); a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   };

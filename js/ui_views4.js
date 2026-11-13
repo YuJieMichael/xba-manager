@@ -90,10 +90,15 @@
   // ===== 道具商店 =====
   V.shop = function () {
     var S = UI.S;
-    var h = '<div class="sumline">游戏币：<b>' + S.user.coins + '</b>　<span class="muted">游戏币获得途径：胜者为王（王者积分 1:1 兑换）、街头竞价出售街球员。升星卡免费来源：联赛前三 / 升级、MVP 等赛季奖项、全明星、XBA杯冠军杯、胜者为王 6 / 9 连胜、赛季目标</span>　会员：<b class="ok">已开通</b>（单机版免费：文字直播、色条 1 天显示、一键加点、税收优惠）</div>';
-    h += UI.box('游戏币充值（单机版免费）', '<p>原版比例 1 元 = 100 游戏币。单机版不收钱，点一下直接到账。</p><p>' +
-      [[100, '1 元'], [1000, '10 元'], [5000, '50 元'], [10000, '100 元']].map(function (x) { return UI.btn('充 ' + x[1] + '（' + x[0] + ' 游戏币）', 'recharge', { v: x[0] }, 'sm'); }).join(' ') +
-      '　自定义：<input id="recharge-v" type="number" min="1" step="100" value="500" style="width:90px"> ' + UI.btn('充值', 'recharge', {}, 'sm') + '</p>');
+    var ex = W().coinExchange(S);
+    var h = '<div class="sumline">游戏币：<b>' + S.user.coins + '</b>　<span class="muted">会员：<b class="ok">已开通</b>（单机版免费：文字直播、色条 1 天显示、一键加点、税收优惠）</span></div>';
+    h += UI.box('怎么赚游戏币', '<ul class="small">' +
+      '<li>每场职业比赛（联赛、季后赛、篮途杯）：赢 +' + W().COIN_WIN + '，输 +' + W().COIN_LOSS + '</li>' +
+      '<li>胜者为王：王者积分 1:1 兑换；街头竞价出售街球员</li>' +
+      '<li>赛季目标、成就、全明星和赛季奖项、联盟杯 / 联盟至尊杯</li></ul>' +
+      '<p><b>资金兑换</b>：' + U.money(W().COIN_RATE) + ' 资金 = 1 游戏币，每赛季最多兑换 ' + W().COIN_EXCH_MAX + ' 个（本赛季还能换 <b>' + ex.left + '</b> 个）。　' +
+      '<input id="exch-n" type="number" min="1" step="10" value="' + Math.min(50, ex.left) + '" style="width:70px"> ' + UI.btn('兑换', 'coinexch', {}, 'sm') + '</p>' +
+      '<p class="small muted">升星卡免费来源：联赛前三 / 升级、MVP 等赛季奖项、全明星、篮途杯冠军杯、胜者为王 6 / 9 连胜、赛季目标</p>');
     h += '<table class="grid"><tr><th>道具</th><th>说明</th><th>价格</th><th>拥有</th><th></th></tr>' + X.ITEMS.map(function (it) {
       var own = it.id === 'select' ? S.user.selectCards : (S.user.items[it.id] || 0);
       var use = '';
@@ -118,12 +123,10 @@
     if (it.id === 'select') S.user.selectCards += n; else S.user.items[it.id] = (S.user.items[it.id] || 0) + n;
     UI.result(null, '购买了 ' + it.cn + ' ×' + n + '，花费 ' + it.price * n + ' 游戏币');
   };
-  A.recharge = function (d) {
-    var v = d.v ? +d.v : Math.round(+document.getElementById('recharge-v').value);
-    if (!(v > 0)) return UI.toast('请输入充值数量', true);
-    v = Math.min(v, 1000000);
-    UI.S.user.coins += v;
-    UI.result(null, '充值成功，获得 ' + v + ' 游戏币');
+  A.coinexch = function () {
+    var n = Math.floor(+document.getElementById('exch-n').value);
+    var r = W().buyCoins(UI.S, n);
+    UI.result(r, '兑换成功：花费 ' + U.money(n * W().COIN_RATE) + ' 资金，获得 ' + n + ' 游戏币');
   };
   A.usefund = function () { var S = UI.S; S.user.items.fund--; W().earn(S, 1000000, '财富银卡兑换'); UI.result(null, '获得 100 万资金'); };
   A.usereset = function (d) {
@@ -135,7 +138,7 @@
   // ===== 经理手册 =====
   V.manual = function () {
     var sec = function (t, body) { return UI.box(t, body); };
-    return sec('XBA 是什么', '<p>XBA篮球经理是一款模拟 NBA 俱乐部运作的篮球经营游戏。你同时拥有一支<b>街球队</b>（青年队，用来培养球员）和一支<b>职业队</b>（参加职业联赛）。比赛由系统根据球员能力和战术自动模拟，以文字直播呈现。</p><p>本单机版中，其他球队都由 AI 经理运营；点击右上角「进入下一天」推进时间，每天进行一轮职业联赛。</p>') +
+    return sec('篮途经理是什么', '<p>篮途经理是一款模拟 NBA 俱乐部运作的篮球经营游戏。你同时拥有一支<b>街球队</b>（青年队，用来培养球员）和一支<b>职业队</b>（参加职业联赛）。比赛由系统根据球员能力和战术自动模拟，以文字直播呈现。</p><p>本单机版中，其他球队都由 AI 经理运营；点击右上角「进入下一天」推进时间，每天进行一轮职业联赛。</p>') +
       sec('一天里做什么', '<ol><li>街球队打<b>训练赛</b>/报名<b>杯赛</b>赚训练点，用训练点给街球员加点。</li><li>给职业队员安排训练项目（第二天生效）。</li><li>检查职业队体力，调整<b>阵容战术</b>（每节的阵容和战术）。</li><li>逛转会市场，出价买人；招募职员；调整票价、签广告。</li><li>进入下一天，观看联赛现场文字直播。</li></ol>') +
       sec('球员能力', '<p>11 项能力：速度、弹跳、强壮、耐力（体质能力）；投篮、三分、运球、传球、篮板、抢断、封盖（技术能力）。另有进攻意识、防守意识、团队意识、领导能力、毅力等隐藏属性。</p><p>属性条颜色代表潜力（上限与现值的差）：绿色空间大，红色、灰色接近上限。综合能力按位置加权：中锋看重强壮、篮板、封盖；组织后卫看重速度、运球、传球、抢断。</p><p>球员老化后速度、弹跳、强壮、耐力衰退约 10%，技术能力衰退约 5%，意识不衰退。职业球员 28-42 岁退役。</p>') +
       sec('比赛引擎', '<p>决定胜负的因素：首先是球员能力（含体力），其次是战术，然后是阵容状态（主力工资超出工资帽越多越差）。</p><p>每次进攻会按进攻战术选择一种进攻方式（共 14 种），再选出进攻核心出手；防守战术通过克制进攻方式来克制进攻战术。实力接近时，战术就成了主要因素。体力低于 80 能力下降且容易受伤。</p><p>花式进攻（隔人扣篮、风车灌篮等）由出手球员的身高、弹跳、速度和进攻意识决定。</p>') +
@@ -149,13 +152,19 @@
   V.settings = function () {
     var S = UI.S;
     var size = Math.round(X.Save.serialize(S).length / 1024);
-    return UI.box('存档', '<p>游戏进度会<b>自动保存</b>在本浏览器中（IndexedDB）。存档大小约 ' + size + ' KB。换浏览器或清理浏览器数据会丢失存档，建议定期导出备份。</p><p>' +
+    return UI.box('存档', '<p>游戏进度会<b>自动保存</b>在本浏览器中（IndexedDB）。存档大小约 ' + size + ' KB，' + (S.user.backupSeason ? '上次导出备份在第 ' + S.user.backupSeason + ' 赛季' : '<b class="red">还没导出过备份</b>') + '。换浏览器或清理浏览器数据会丢失存档，建议定期导出备份。</p><p>' +
       UI.btn('立即保存', 'savenow') + ' ' + UI.btn('导出存档文件', 'exportsave') + ' ' + UI.btn('导入存档文件', 'importsave') + '</p>') +
       UI.box('重新开始', '<p>删除当前存档并开始新游戏。</p><p>' + UI.btn('开始新游戏', 'resetgame') + '</p>') +
-      UI.box('关于', '<p>本作是对 2006 年网页游戏《XBA篮球经理》玩法的单机复刻，规则参数参考了当年的《经理手册》（比赛引擎的进攻方式比率表、防守克制表、位置能力侧重表等）。仅供个人怀旧娱乐。</p>');
+      UI.box('关于', '<p>版本 ' + X.VERSION + '</p><p>《篮途经理》是一款免费的单机篮球经营游戏，灵感来自早年的网页篮球经理游戏。所有代码、数值和文字均为独立编写，与任何商业游戏及其运营方无关。存档只保存在你的浏览器里，不联网、不收集任何数据。</p>');
   };
   A.savenow = function () { X.Save.save(UI.S).then(function () { UI.toast('已保存'); }); };
-  A.exportsave = function () { X.Save.exportFile(UI.S); };
+  A.exportsave = function () { X.Save.exportFile(UI.S); UI.S.user.backupSeason = UI.S.season; UI.persist(); };
+  // 每个赛季结束提醒一次导出备份（这个赛季已经导出过就不提醒）
+  UI.backupNag = function (season) {
+    UI.modal('💾 第 ' + season + ' 赛季结束，备份一下存档吧', '<p>存档只保存在这个浏览器里。清理浏览器数据、换浏览器或换手机都会让存档消失。</p><p>导出的文件可以在「存档设置 → 导入存档文件」恢复，也能用来在电脑和手机之间转移进度。</p><p>' +
+      UI.btn('导出存档文件', 'exportsavenag', {}, 'on') + ' ' + UI.btn('这次不用', 'closemodal') + '</p>');
+  };
+  A.exportsavenag = function () { A.exportsave(); UI.closeModal(); UI.toast('已导出，请把文件保存好'); };
   A.importsave = function () {
     var inp = document.createElement('input');
     inp.type = 'file'; inp.accept = '.json,application/json';
@@ -165,8 +174,9 @@
       r.onload = function () {
         try {
           var S = JSON.parse(r.result);
-          if (!S.players || !S.teams || !S.user) throw new Error('不是有效的 XBA 存档');
-          UI.S = S; UI.persist(); UI.go('home'); UI.toast('存档已导入');
+          if (!X.Migrate.valid(S)) throw new Error('不是有效的篮途经理存档');
+          if (X.Migrate.tooNew(S)) throw new Error('这个存档来自更新的游戏版本，请先刷新页面更新游戏');
+          UI.S = X.Migrate.run(S); UI.persist(); UI.go('home'); UI.toast('存档已导入');
         } catch (e) { UI.toast('导入失败：' + e.message, true); }
       };
       r.readAsText(f);
@@ -205,6 +215,7 @@
     if (main) main.innerHTML = '<div class="loading">🏀 比赛进行中……<br><span class="muted small">' + esc(label) + '</span></div>';
     setTimeout(function () {
       try {
+        var season0 = S.season;
         var out = W().advance(S, UI._pre);
         UI._pre = null;
         var news = [];
@@ -214,8 +225,9 @@
         X.Save.save(S).catch(function () { UI.toast('自动保存失败', true); });
         UI.busy = false;
         UI.go('report');
+        if (S.season !== season0 && (S.user.backupSeason || 0) < season0) UI.backupNag(season0);
       } catch (e) {
-        UI.busy = false; console.error(e); UI.toast('推进出错：' + e.message, true); UI.render();
+        UI.busy = false; UI.render(); UI.reportError(e, '进入下一天');
       }
     }, 30);
   };

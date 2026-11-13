@@ -268,6 +268,7 @@
     S.user.coins += wk.pts;
     W().msg(S, '胜者为王：连胜 ' + wk.wins + ' 场退出，获得王者积分 ' + wk.pts + '（已兑换为 ' + wk.pts + ' 游戏币）', 'cup');
     if (wk.wins >= 9) S.user.trophies.push({ season: S.season, name: '胜者为王 九连胜' });
+    W().giveStarcards(S, wk.wins >= 9 ? 2 : wk.wins >= 6 ? 1 : 0, '胜者为王 ' + wk.wins + ' 连胜');
     wk.over = true;
     return null;
   };

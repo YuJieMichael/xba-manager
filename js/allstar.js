@@ -59,6 +59,7 @@
     if (isMine(S, p)) {
       var pro = W().userPro(S);
       pro.fans += fans; S.user.coins += 50; p.support = Math.min(100, p.support + 10);
+      W().giveStarcards(S, 1, p.name + ' 获得' + title);
       S.user.trophies.push({ season: S.season, name: p.name + '：' + title });
       W().msg(S, '⭐ ' + p.name + ' 获得 ' + title + '！球迷 +' + fans + '，奖励 50 游戏币', 'cup');
     }

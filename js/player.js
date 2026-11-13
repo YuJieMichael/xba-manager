@@ -289,6 +289,30 @@
   };
 
   // 意识成长：比赛后
+  // ===== 意识特训：花资金直接提升意识（后期资金的主要去处）=====
+  // 费用随当前意识平方增长；每名球员每赛季最多 3 次
+  P.IQ_CAMP_MAX = 3;
+  P.IQ_CN = { off: '进攻意识', def: '防守意识', team: '团队意识' };
+  P.iqCampCost = function (p, k) { return Math.round(Math.max(200000, 200000 * Math.pow(p.iq[k] / 20, 2)) / 10000) * 10000; };
+  P.iqCampLeft = function (S, p) { return P.IQ_CAMP_MAX - (p.camp && p.camp.season === S.season ? p.camp.n : 0); };
+  P.iqCamp = function (S, p, k) {
+    var t = p.teamId && S.teams[p.teamId];
+    if (!t || !t.isUser || t.kind !== 'pro') return { err: '只有职业队球员能参加意识特训' };
+    if (!P.IQ_CN[k]) return { err: '无效的特训项目' };
+    if (P.iqCampLeft(S, p) <= 0) return { err: p.name + ' 本赛季已经特训 ' + P.IQ_CAMP_MAX + ' 次了' };
+    if (p.iq[k] >= 99) return { err: P.IQ_CN[k] + '已经满了' };
+    var cost = P.iqCampCost(p, k);
+    if (S.user.money < cost) return { err: '资金不足：需要 ' + U.money(cost) };
+    X.World.spend(S, cost, '意识特训：' + p.name);
+    var g = Math.min(99 - p.iq[k], U.rf(4, 6));
+    p.iq[k] += g;
+    p.camp = { season: S.season, n: (p.camp && p.camp.season === S.season ? p.camp.n : 0) + 1 };
+    p.seen.hidden = true;
+    return { gain: g, cost: cost };
+  };
+  // 意识的大概档次（不用道具也能看到）
+  P.iqGrade = function (p) { var v = (p.iq.off + p.iq.def + p.iq.team) / 3; return v < 40 ? '低' : v < 65 ? '中' : '高'; };
+
   P.iqGrow = function (p, minutes) {
     var g = Math.min(1, minutes / 30) * U.rf(0.04, 0.12);
     var f = p.focus || 'team';

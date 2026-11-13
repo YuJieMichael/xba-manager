@@ -33,6 +33,7 @@
 node tests/run.js         # 完整回归测试（约 2 分钟，含战术平衡矩阵）
 node tests/run.js quick   # 跳过战术矩阵
 node tests/tactics.js 200 # 打印 6×6 战术胜率矩阵（每格 200 场）
+node tests/longrun.js 8 1 # 长期平衡：自动经营连打 8 个赛季（约 3 分钟），看战绩、资金、实力差距
 ```
 
 测试用 `XBA.U.seed(n)` 固定随机数，同一种子结果完全一致。每次提 PR 和推送到 main 时，GitHub Actions 会自动跑快速测试。

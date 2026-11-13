@@ -31,7 +31,7 @@
     return '第 ' + S.season + ' 赛季 ' + (S.day === 13 ? '赛季中休息日' : '赛季末休息日');
   };
 
-  // 免费升星卡：联赛名次、升级、赛季奖项、全明星、XBA杯、胜者为王都会发
+  // 免费升星卡：联赛名次、升级、赛季奖项、全明星、篮途杯、胜者为王都会发
   W.giveStarcards = function (S, n, why) {
     if (!(n > 0)) return;
     S.user.items.starcard = (S.user.items.starcard || 0) + n;
@@ -88,6 +88,7 @@
   W.removeFromTeam = function (S, team, p) {
     team.playerIds = team.playerIds.filter(function (id) { return id !== p.id; });
     p.teamId = null;
+    if (team.isUser) p.wasMine = true; // 自己带过的球员，离队后仍然看得清
     // 从战术预设中移除
     W.allPresets(team).forEach(function (pr) { pr.lineup = pr.lineup.map(function (id) { return id === p.id ? null : id; }); });
   };
@@ -192,6 +193,7 @@
   W.newGame = function (manager, opts) {
     opts = opts || {};
     var S = {
+      saveVer: X.SAVE_VER,
       difficulty: opts.difficulty || 'normal', rebirths: opts.rebirths || 0, syncBoost: 0,
       version: 1, nextId: 1, dayNo: 0, season: 1, day: 0, players: {}, teams: {}, leagues: [], usedNames: {},
       msgs: [], market: [], staffPool: [], cups: [], matches: {}, myMatches: [], draft: null, history: [], adOffers: [], awards: {}, hof: [], xcup: null, xcupInvites: null,
@@ -204,7 +206,7 @@
     // 联赛金字塔
     X.LEVELS.forEach(function (L) {
       for (var i = 0; i < L.leagues; i++) {
-        var lg = { id: 'L' + L.level + '-' + (i + 1), level: L.level, idx: i, name: L.level === 1 ? 'XBA 超级联赛' : L.level + '级联赛 ' + (i + 1) + ' 区', teamIds: [], schedule: [], results: [] };
+        var lg = { id: 'L' + L.level + '-' + (i + 1), level: L.level, idx: i, name: L.level === 1 ? '篮途超级联赛' : L.level + '级联赛 ' + (i + 1) + ' 区', teamIds: [], schedule: [], results: [] };
         S.leagues.push(lg);
       }
     });
@@ -273,7 +275,7 @@
     X.Cups.daily(S);
     var lg = W.league(S, pro.leagueId);
     S.usedNames[pro.name] = 1;
-    W.msg(S, '欢迎来到 XBA 篮球经理！你的球队 ' + pro.name + ' 已加入 ' + lg.name + '。系统赠送启动资金 50 万、20 张新人杯邀请函。', 'sys');
+    W.msg(S, '欢迎来到篮途经理！你的球队 ' + pro.name + ' 已加入 ' + lg.name + '。系统赠送启动资金 50 万、20 张新人杯邀请函。', 'sys');
     W.msg(S, '新手提示：先去「职员管理」招募训练师、营养师、队医；街球队靠打「训练赛」和「新人杯」获得训练点来训练球员。', 'sys');
   };
 
@@ -284,7 +286,7 @@
     var main = W.teamPlayers(S, team).map(function (p) { return p.salary; }).sort(function (a, b) { return b - a; }).slice(0, 8);
     var tot = U.sum(main), cap = W.cap(team);
     if (tot <= cap) return 1;
-    return Math.max(0.7, 1 - (tot - cap) / cap * 0.6);
+    return Math.max(0.8, 1 - (tot - cap) / cap * 0.6); // 最低 80%
   };
 
   // 引擎参数
@@ -326,11 +328,31 @@
   };
 
   // 职业队训练点：每场比赛按上场时间和表现累积到全队共用的点数池
-  W.earnProTP = function (S, res, userIsHome) {
+  // ===== 游戏币：不能直接充值，只能靠比赛、目标、奖项赚，或用资金限量兑换 =====
+  W.COIN_WIN = 5; W.COIN_LOSS = 2;
+  W.COIN_RATE = 20000; W.COIN_EXCH_MAX = 300; // 2 万资金 = 1 游戏币，每赛季最多 300 个
+  W.coinExchange = function (S) {
+    var e = S.user.coinExch && S.user.coinExch.season === S.season ? S.user.coinExch : { season: S.season, n: 0 };
+    return { used: e.n, left: W.COIN_EXCH_MAX - e.n };
+  };
+  W.buyCoins = function (S, n) {
+    if (!(n > 0)) return '请输入兑换数量';
+    var ex = W.coinExchange(S);
+    if (n > ex.left) return '本赛季最多还能兑换 ' + ex.left + ' 个游戏币';
+    if (S.user.money < n * W.COIN_RATE) return '资金不足：需要 ' + U.money(n * W.COIN_RATE);
+    W.spend(S, n * W.COIN_RATE, '兑换游戏币');
+    S.user.coinExch = { season: S.season, n: ex.used + n };
+    S.user.coins += n;
+    return null;
+  };
+  W.earnProTP = function (S, res, userIsHome, noCoins) {
     var box = userIsHome ? res.box.h : res.box.a, tot = 0;
     box.forEach(function (b) { if (b.min > 0) tot += Math.round(b.min / 6 + Math.max(0, b.eff) * 0.3); });
     tot = Math.round(tot * X.Manager.tpMul(S));
     S.user.proTP = (S.user.proTP || 0) + tot;
+    // 联赛、季后赛、篮途杯每场都给游戏币：赢 5、输 2（表演赛不给，避免刷）
+    var won = userIsHome ? res.hs > res.as : res.as > res.hs;
+    if (!noCoins) S.user.coins += won ? W.COIN_WIN : W.COIN_LOSS;
     return tot;
   };
 
@@ -538,7 +560,7 @@
       X.Playoffs.playDay(S, out);
     }
 
-    // 1.5 XBA杯
+    // 1.5 篮途杯
     X.XCup.playDay(S, out);
 
     // 2. 街球杯赛
@@ -601,6 +623,7 @@
     var seasonEnded = false;
     if (S.day === X.SEASON_END) { X.Legend.run(S, out); W.seasonEnd(S, out); seasonEnded = true; }
 
+    X.Ops.pressResolve(S);
     S.dayNo += 1;
     if (seasonEnded) { S.day = 0; }
     else S.day += 1;
@@ -682,7 +705,7 @@
     X.Goals.seasonRecord(S);
     var fired = X.Ops.seasonBoard(S);
 
-    // XBA杯邀请函（按本赛季成绩）
+    // 篮途杯邀请函（按本赛季成绩）
     X.XCup.invites(S);
 
     // 升降级
@@ -845,7 +868,7 @@
     train: { cn: '训练效果 +10%' }, tp: { cn: '训练点获得 +10%' }, ticket: { cn: '门票收入 +10%' },
     money: { cn: '每次开局多 100 万资金' }, skill: { cn: '立刻获得 2 个经理技能点' }
   };
-  W.canRebirth = function (S) { return S.user.trophies.some(function (t) { return /^XBA 超级联赛 冠军$/.test(t.name); }); };
+  W.canRebirth = function (S) { return S.user.trophies.some(function (t) { return /^篮途超级联赛 冠军$/.test(t.name); }); };
   W.legacyCount = function (S, b) { return ((S.user.legacy && S.user.legacy.bonuses) || []).filter(function (x) { return x === b; }).length; };
   W.rebirth = function (S, hofPid, bonus) {
     var lg = JSON.parse(JSON.stringify(S.user.legacy || { count: 0, bonuses: [], legends: [] }));

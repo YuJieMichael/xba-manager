@@ -59,7 +59,7 @@
           var st = W().standings(S, l);
           return '<div class="pyr' + (l.id === pro.leagueId ? ' me' : '') + '" data-act="lgview" data-id="' + l.id + '"><b>' + esc(l.name) + '</b><span>领头：' + esc(st[0].name) + '</span></div>';
         }).join('') + '</div>';
-      }).join('') + '</div><p class="muted small">XBA 联赛结构像金字塔：第一等级只有一个联赛，其冠军是 XBA 职业篮球联赛总冠军。点击方格查看该联赛。</p>';
+      }).join('') + '</div><p class="muted small">篮途联赛结构像金字塔：第一等级只有一个联赛，其冠军是篮途职业联赛总冠军。点击方格查看该联赛。</p>';
     } else {
       var tid = UI.videoTeam || null;
       h += '<p>选择球队：<select data-change="videoteam"><option value="">--</option>' + lg.teamIds.map(function (id) { var t = S.teams[id]; return '<option value="' + id + '"' + (id === tid ? ' selected' : '') + '>' + esc(t.name) + '</option>'; }).join('') + '</select></p>';
@@ -229,7 +229,7 @@
         '<p>' + UI.btn('🔴 观看现场文字直播', 'livestart2', { id: m.id }, 'big') + ' ' + UI.btn('查看技术统计', 'go', { r: 'match', a: m.id }) + '</p>');
     }
     if (r.xcupGames && r.xcupGames.length) {
-      h += UI.box('XBA杯', r.xcupGames.map(function (g) { var m = S.matches[g.mid]; if (!m) return ''; var me = S.teams[m.home.id] && S.teams[m.home.id].isUser, won = me ? m.hs > m.as : m.as > m.hs; return '<div>' + esc(g.label) + '：' + esc(m.home.name) + ' <b class="' + (won ? 'win' : 'lose') + '">' + m.hs + ' : ' + m.as + '</b> ' + esc(m.away.name) + '　' + UI.link('战报', 'go', { r: 'match', a: m.id }) + '</div>'; }).join(''));
+      h += UI.box('篮途杯', r.xcupGames.map(function (g) { var m = S.matches[g.mid]; if (!m) return ''; var me = S.teams[m.home.id] && S.teams[m.home.id].isUser, won = me ? m.hs > m.as : m.as > m.hs; return '<div>' + esc(g.label) + '：' + esc(m.home.name) + ' <b class="' + (won ? 'win' : 'lose') + '">' + m.hs + ' : ' + m.as + '</b> ' + esc(m.away.name) + '　' + UI.link('战报', 'go', { r: 'match', a: m.id }) + '</div>'; }).join(''));
     }
     if (r.cupResults && r.cupResults.length) {
       h += UI.box('街球杯赛', r.cupResults.map(function (c) {
@@ -318,7 +318,7 @@
   // ===== 胜者为王 =====
   V.wk = function () {
     var S = UI.S, wk = S.user.wk, today = S.user.wkDay === S.dayNo;
-    var h = '<div class="wk-h">👑 胜者为王 <small>XBA 大陆最残酷的职业竞技场</small></div>';
+    var h = '<div class="wk-h">👑 胜者为王 <small>篮途大陆最残酷的职业竞技场</small></div>';
     h += '<p class="tip">每次最多连续进行 9 场淘汰赛，系统按球队主力工资和匹配对手。连胜 3、6、9 场后可退出领取王者积分（1 积分 = 1 游戏币）；继续比赛一旦输球，积分清零。参赛阵容状态恒定 100%，不消耗体力。每天可参加一次。使用「表演赛/胜者为王战术板」。</p>';
     h += '<div class="wk-pts">取胜 1-3 场每场 1 分，4-6 场每场 2 分，7-9 场每场 4 分。累计王者积分：<b>' + S.user.wkPts + '</b></div>';
     if (!wk || wk.over || !today) {
@@ -349,7 +349,7 @@
   V.mymatches = function () {
     var S = UI.S, f = UI.curTab('mm', 'all');
     var list = S.myMatches.map(function (id) { return S.matches[id]; }).filter(function (m) { return m && (f === 'all' || m.type === f); });
-    return UI.tabs('mm', [['all', '全部'], ['league', '职业联赛'], ['cup', '街球杯赛'], ['train', '训练赛'], ['friendly', '友谊赛'], ['show', '表演赛'], ['wk', '胜者为王'], ['xcup', 'XBA杯'], ['playoff', '季后赛'], ['challenge', '联盟挑战'], ['allstar', '全明星']], f) +
+    return UI.tabs('mm', [['all', '全部'], ['league', '职业联赛'], ['cup', '街球杯赛'], ['train', '训练赛'], ['friendly', '友谊赛'], ['show', '表演赛'], ['wk', '胜者为王'], ['xcup', '篮途杯'], ['playoff', '季后赛'], ['challenge', '联盟挑战'], ['allstar', '全明星']], f) +
       (list.length ? UI.matchList(S, list) : '<span class="muted">暂无比赛</span>');
   };
 })(window.XBA);

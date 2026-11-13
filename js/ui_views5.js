@@ -1,4 +1,4 @@
-// 页面：XBA杯、荣誉室（我的荣誉 / 赛季颁奖 / 名人堂 / 历届冠军）
+// 页面：篮途杯、荣誉室（我的荣誉 / 赛季颁奖 / 名人堂 / 历届冠军）
 (function (X) {
   var U = X.U, P = X.P, UI = X.UI, V = UI.views, A = UI.acts, esc = U.esc;
   var W = function () { return X.World; };
@@ -6,13 +6,13 @@
 
   function tname(S, id) { var t = S.teams[id]; return t ? UI.teamLink(t) : '<span class="muted">（已解散）</span>'; }
 
-  // ===== XBA杯 =====
+  // ===== 篮途杯 =====
   V.xcup = function () {
     var S = UI.S, xc = S.xcup;
-    var h = '<div class="wk-h">🏆 XBA杯职业大赛 <small>第 ' + (xc ? xc.season : S.season) + ' 赛季</small></div>';
+    var h = '<div class="wk-h">🏆 篮途杯职业大赛 <small>第 ' + (xc ? xc.season : S.season) + ' 赛季</small></div>';
     h += '<p class="tip">48 支受邀球队分 8 组进行<b>分组预赛</b>（单循环 5 轮），每组前 3 名进入<b>分组决赛</b>，后 3 名打<b>参赛杯</b>。分组决赛每组前 3 名进入<b>冠军杯</b>，后 3 名打<b>优胜杯</b>。杯赛都是单场淘汰。' +
-      '比赛日：预赛第 2-6 轮、决赛第 8-12 轮、淘汰赛第 14-18 轮，与联赛同一天进行，<b>不消耗体力、不会受伤</b>，使用「XBA杯战术板」。邀请函发给每个联赛的前三名。</p>';
-    if (!xc) return h + '<span class="muted">本赛季没有 XBA杯（下赛季开始时举行）。</span>';
+      '比赛日：预赛第 2-6 轮、决赛第 8-12 轮、淘汰赛第 14-18 轮，与联赛同一天进行，<b>不消耗体力、不会受伤</b>，使用「篮途杯战术板」。邀请函发给每个联赛的前三名。</p>';
+    if (!xc) return h + '<span class="muted">本赛季没有 篮途杯（下赛季开始时举行）。</span>';
     h += '<div class="sumline">当前阶段：<b>' + XC().stageName(xc) + '</b>　' + (xc.user ? '你的球队：' + (xc.result ? '<b>' + esc(xc.result) + '</b>' : '<span class="ok">参赛中</span>') : '<span class="muted">你的球队本届没有受邀</span>') + '</div>';
     var tabs = [['pre', '分组预赛']];
     if (xc.fin) tabs.push(['fin', '分组决赛']);
@@ -98,7 +98,7 @@
           '<div class="muted small">' + esc(e.team) + ' · 第 ' + e.season + ' 赛季入选' + (e.why ? '（' + esc(e.why) + '）' : '') + ' ' + UI.link('移出', 'hofdel', { pid: e.pid }) + '</div></div>';
       }).join('') + '</div>' : '<span class="muted">名人堂还空着。</span>';
     } else {
-      h += S.history.length ? '<table class="grid"><tr><th>赛季</th><th>XBA 超级联赛冠军</th><th>XBA杯冠军杯冠军</th></tr>' + S.history.map(function (x) {
+      h += S.history.length ? '<table class="grid"><tr><th>赛季</th><th>篮途超级联赛冠军</th><th>篮途杯冠军杯冠军</th></tr>' + S.history.map(function (x) {
         return '<tr><td>第 ' + x.season + ' 赛季</td><td>' + esc(x.champions[0].team) + (x.champions[0].isUser ? ' 🏆' : '') + '</td><td>' + esc(x.xcup || '-') + '</td></tr>';
       }).join('') + '</table>' : '<span class="muted">第一个赛季还没结束</span>';
     }

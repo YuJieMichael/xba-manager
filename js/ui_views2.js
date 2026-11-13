@@ -81,7 +81,7 @@
     var pr = board.presets[T.preset];
     var tab = UI.curTab('tacpro', 'lineup');
     var h = coachBox(S);
-    h += '<div class="tac-top">战术板：' + [['league', '联赛战术板'], ['cup', 'XBA杯战术板'], ['other', '表演赛/胜者为王战术板']].map(function (b) {
+    h += '<div class="tac-top">战术板：' + [['league', '联赛战术板'], ['cup', '篮途杯战术板'], ['other', '表演赛/胜者为王战术板']].map(function (b) {
       return UI.btn(b[1], 'tacboard', { b: b[0] }, 'sm' + (T.board === b[0] ? ' on' : ''));
     }).join(' ') + '　' + UI.btn('把联赛战术板复制到当前战术板', 'tacboardcopy', {}, 'sm') + '</div>';
     h += UI.tabs('tacpro', [['lineup', '阵容战术'], ['config', '配置阵容战术'], ['level', '战术等级'], ['counter', '战术相克表']], tab);
@@ -142,7 +142,7 @@
       return '<option value="' + k + '"' + ((c.style || 'balance') === k ? ' selected' : '') + '>' + Co.STYLES[k].cn + '</option>';
     }).join('') + '</select> <span class="muted small">' + Co.STYLES[c.style || 'balance'].desc + '</span></div>' +
       '<div style="margin-top:4px">' + UI.btn('针对下一个联赛对手排阵', 'coachnext', {}, 'sm on') + ' ' + UI.btn('排一套通用阵容', 'coachgen', {}, 'sm') +
-      ' <label class="small"><input type="checkbox" data-change="coachauto"' + (c.auto ? ' checked' : '') + '> 每场比赛前自动针对对手排阵（联赛、XBA杯、表演赛、胜者为王）</label></div><div style="margin-top:4px">' + UI.coachToggle(S) + '</div>';
+      ' <label class="small"><input type="checkbox" data-change="coachauto"' + (c.auto ? ' checked' : '') + '> 每场比赛前自动针对对手排阵（联赛、篮途杯、表演赛、胜者为王）</label></div><div style="margin-top:4px">' + UI.coachToggle(S) + '</div>';
     if (rep) {
       h += '<div class="coach-rep small">' + (rep.opp ? '对手 <b>' + esc(rep.opp) + '</b>' + (rep.games ? '（看了 ' + rep.games + ' 场录像）' : '') + '常用进攻【' + E.OFF[rep.oppOff].cn + '】、防守【' + E.DEF[rep.oppDef].cn + '】' + (rep.star ? '，头号得分手 ' + esc(rep.star) : '') + '。' : '') +
         '我方（' + rep.style + '）：进攻用【' + E.OFF[rep.off].cn + '】，防守用【' + E.DEF[rep.def].cn + '】' + (rep.core ? '，进攻核心 ' + esc(rep.core) : '') + (rep.mark >= 0 ? '，主防对方' + E.SLOT_NAMES.pro[rep.mark] : '') + '；第二节轮换，领先 15 分换保守阵容，落后 15 分换追分阵容。</div>';

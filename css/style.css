@@ -1,4 +1,4 @@
-/* XBA篮球经理 复古橙红风格 */
+/* 篮途经理 复古橙红风格 */
 :root {
   --red: #a8162b; --red2: #7c0d1e; --org: #ef8a2a; --org2: #d96d12; --cream: #fff6e8; --cream2: #fde6c6;
   --line: #e7a463; --ink: #3b2b1d; --muted: #9a8670; --green: #2e9b2e; --bad: #d23a2a; --warn: #e69a12;
@@ -223,7 +223,7 @@ table.grid th.sort-asc::after { content: '▲'; opacity: 1; color: var(--red); }
 .pstar { display: inline-block; color: #fff; background: linear-gradient(#b05ae0, #7a2fb0); border-radius: 8px; padding: 0 5px; font-size: 11px; font-weight: bold; margin-left: 3px; vertical-align: 1px; letter-spacing: -1px; }
 td.av.over { color: #d0202e; font-weight: bold; }
 
-/* XBA杯对阵图 */
+/* 篮途杯对阵图 */
 .bracket { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
 .br-col { min-width: 150px; display: flex; flex-direction: column; justify-content: space-around; gap: 6px; }
 .br-h { text-align: center; font-weight: bold; color: #8a3a0a; background: #fbd8a8; border-radius: 4px; padding: 2px; }
@@ -353,3 +353,8 @@ table.grid.box td, table.grid.box th { padding: 2px 4px; }
 .fac { border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 6px 8px; } .fac-n { font-weight: bold; margin-bottom: 2px; } .fac .btn { margin-top: 4px; }
 .life-i { display: inline-block; margin: 2px 6px 2px 0; padding: 1px 6px; border-radius: 10px; border: 1px solid #ddd; font-size: 12px; }
 .life-i.on { background: #ffe6b8; border-color: var(--org2); font-weight: bold; } .life-i.past { color: #aaa; }
+
+/* 新版本提示条、错误报告 */
+.update-bar { position: fixed; left: 50%; top: 10px; transform: translateX(-50%); z-index: 80; background: #fff8e8; border: 2px solid #a8162b; border-radius: 8px; padding: 8px 12px; box-shadow: 0 4px 14px rgba(0,0,0,.25); display: flex; gap: 8px; align-items: center; max-width: calc(100vw - 24px); font-size: 14px; }
+#err-report .mask { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 90; }
+#err-report .dlg { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 91; background: #fff; width: min(560px, calc(100vw - 24px)); border-radius: 8px; overflow: hidden; }

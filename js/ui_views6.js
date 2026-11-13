@@ -126,7 +126,7 @@
         }).join('') + '</table>');
     } else {
       var ss = (S.user.seasons || []).slice().reverse();
-      h += ss.length ? '<table class="grid"><tr><th>赛季</th><th>联赛</th><th>排名</th><th>战绩</th><th>得失分</th><th>净利润</th><th>球迷</th><th>XBA杯</th></tr>' + ss.map(function (x) {
+      h += ss.length ? '<table class="grid"><tr><th>赛季</th><th>联赛</th><th>排名</th><th>战绩</th><th>得失分</th><th>净利润</th><th>球迷</th><th>篮途杯</th></tr>' + ss.map(function (x) {
         return '<tr><td>第 ' + x.s + ' 赛季</td><td>' + esc(x.league) + '</td><td>第 ' + x.rank + ' 名</td><td>' + x.w + ' 胜 ' + x.l + ' 负</td><td>' + x.pf + ' / ' + x.pa + '</td><td class="' + (x.net < 0 ? 'red' : 'ok') + '">' + U.money(x.net) + '</td><td>' + U.money(x.fans) + '</td><td>' + esc(x.xcup || '-') + '</td></tr>';
       }).join('') + '</table>' : '<span class="muted">打完一个赛季后这里会有总结。</span>';
     }

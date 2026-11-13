@@ -48,7 +48,7 @@
   V.manager = function () {
     var S = UI.S, m = MG().get(S), need = MG().need(m.lv);
     var h = '<div class="mgr"><div class="mgr-lv">' + esc(S.user.manager) + ' 经理 <b>Lv.' + m.lv + '</b></div><div class="bar"><i style="width:' + Math.min(100, m.xp / need * 100) + '%;background:#4a8fd8"></i></div><div class="small muted">经验 ' + m.xp + ' / ' + need + '　可用技能点 <b class="money">' + m.pts + '</b></div></div>';
-    h += '<p class="tip">经验来源：联赛胜 +12 / 负 +4，季后赛胜 +20，XBA杯胜 +8，街球杯赛每场 +1~3，完成赛季目标 +80，达成成就 +40，每赛季结束 +60。每升一级得 1 个技能点。</p>';
+    h += '<p class="tip">经验来源：联赛胜 +12 / 负 +4，季后赛胜 +20，篮途杯胜 +8，街球杯赛每场 +1~3，完成赛季目标 +80，达成成就 +40，每赛季结束 +60。每升一级得 1 个技能点。</p>';
     h += '<div class="skills">' + MG().SKILLS.map(function (sk) {
       var lv = m.skills[sk.id] || 0;
       return '<div class="sk' + (lv ? ' on' : '') + '"><div class="sk-n">' + sk.icon + ' ' + sk.cn + ' <span class="sk-l">' + '●'.repeat(lv) + '○'.repeat(sk.max - lv) + '</span></div><div class="small">' + sk.per + (sk.id === 'eye' ? '' : '（每级）') + '</div>' +

@@ -1,16 +1,16 @@
 {
-  "name": "XBA篮球经理 单机复刻版",
-  "short_name": "XBA篮球经理",
+  "name": "篮途经理 · 单机篮球经营游戏",
+  "short_name": "篮途经理",
+  "description": "从街头到超级联赛：培养球员、排兵布阵、经营球队的单机篮球经理游戏。",
+  "lang": "zh-CN",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f4d9b3",
   "theme_color": "#a8162b",
   "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }

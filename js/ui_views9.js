@@ -41,7 +41,7 @@
     var S = UI.S, h = origManager();
     var lg = S.user.legacy;
     h += UI.box('🔁 重生（二周目）', (lg ? '<p>已重生 <b>' + lg.count + '</b> 次　永久加成：' + lg.bonuses.map(function (b) { return W().BONUSES[b].cn; }).join('、') + (lg.legends.length ? '　传奇职员：' + lg.legends.map(function (x) { return esc(x.name); }).join('、') : '') + '</p>' : '') +
-      '<p>当前难度：<b>' + W().diff(S).cn + '</b>。拿到<b>XBA 超级联赛总冠军</b>后可以重生：从 4 级联赛重新开始，难度提升一档（最高地狱），每次重生 AI 再强 2 点。保留经理等级和技能、成就、荣誉、名人堂、联盟纪录和游戏币；带走一名名人堂球员当终身训练员，再选一项永久加成（可以叠加）。</p>' +
+      '<p>当前难度：<b>' + W().diff(S).cn + '</b>。拿到<b>篮途超级联赛总冠军</b>后可以重生：从 4 级联赛重新开始，难度提升一档（最高地狱），每次重生 AI 再强 2 点。保留经理等级和技能、成就、荣誉、名人堂、联盟纪录和游戏币；带走一名名人堂球员当终身训练员，再选一项永久加成（可以叠加）。</p>' +
       (W().canRebirth(S) ? UI.btn('我要重生', 'rebirth', {}, 'big') : '<span class="muted">还没拿到超级联赛总冠军。</span>'));
     return h;
   };

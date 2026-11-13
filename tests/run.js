@@ -19,6 +19,33 @@ function newWorld(X, seed) {
 function playSeason(X, S) { var se = S.season, n = 0; while (S.season === se && n < 60) { X.World.advance(S); n++; } return n; }
 function saved(S) { return JSON.stringify(S, function (k, v) { return typeof v === 'number' && !Number.isInteger(v) ? Math.round(v * 100) / 100 : v; }); }
 
+test('版本号：js/version.js 和 version.json 一致', function () {
+  var X = require('./harness')(), fs = require('fs'), path = require('path');
+  var j = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'version.json'), 'utf8'));
+  assert.strictEqual(j.version, X.VERSION);
+  assert.strictEqual(X.Migrate.STEPS.length, X.SAVE_VER, '每个存档版本都要有一步升级');
+});
+
+test('旧存档逐级升级到最新版本，新游戏直接是最新版本', function () {
+  var X = require('./harness')();
+  var S = newWorld(X, 5);
+  assert.strictEqual(S.saveVer, X.SAVE_VER);
+  // 伪造一个 0 版本的旧存档：旧联赛名、旧荣誉
+  var old = JSON.parse(JSON.stringify(S));
+  delete old.saveVer;
+  old.leagues[0].name = 'XBA 超级联赛';
+  old.user.trophies.push({ season: 1, name: 'XBA 超级联赛 冠军' }, { season: 1, name: '第1赛季 XBA杯 冠军杯 冠军' });
+  var up = X.Migrate.run(old);
+  assert.strictEqual(up.saveVer, X.SAVE_VER);
+  assert.strictEqual(up.leagues[0].name, '篮途超级联赛');
+  assert.ok(X.World.canRebirth(up), '改名后旧冠军荣誉仍能重生');
+  assert.ok(JSON.stringify(up).indexOf('XBA杯') < 0);
+  // 新版本存档不会被旧页面改动
+  var future = JSON.parse(JSON.stringify(S)); future.saveVer = X.SAVE_VER + 1;
+  assert.ok(X.Migrate.tooNew(future));
+  X.U.seed(null);
+});
+
 test('同一种子两次模拟结果完全一致', function () {
   var X = require('./harness')(), E = X.Engine, W = X.World;
   function once() {

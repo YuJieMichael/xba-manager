@@ -26,7 +26,7 @@
     // 同级别：比上赛季名次再进 2 名；换了级别（升降级）：中游目标
     var n = last && S.user.lastLevel === lv ? U.clamp(last - 2, 2, 8) : (lv === 4 ? 6 : 8);
     var list = [{ id: 'rank', cn: '联赛排名进入前 ' + n, n: n, reward: { money: MONEY[lv], coins: 50 } }];
-    if (S.xcup && S.xcup.user && S.xcup.season === S.season) list.push({ id: 'xcup', cn: 'XBA杯从分组预赛出线', reward: { coins: 100 } });
+    if (S.xcup && S.xcup.user && S.xcup.season === S.season) list.push({ id: 'xcup', cn: '篮途杯从分组预赛出线', reward: { coins: 100 } });
     list.push({ id: 'street', cn: '赢得 1 次街球杯赛冠军', reward: { starcard: 1, coins: 30 } });
     list.push({ id: 'grow', cn: '培养一名职业球员综合提升 5', reward: { starcard: 1 } });
     var base = {};
@@ -86,10 +86,10 @@
     { id: 'streak10', cn: '势不可挡', desc: '职业联赛连胜 10 场', coins: 80, ok: function (S) { return bestStreak(S) >= 10; } },
     { id: 'lv3', cn: '更上一层楼', desc: '升级到 3 级联赛', coins: 50, ok: function (S) { return W().userPro(S).level <= 3; } },
     { id: 'lv2', cn: '强队之列', desc: '升级到 2 级联赛', coins: 100, ok: function (S) { return W().userPro(S).level <= 2; } },
-    { id: 'lv1', cn: '超级联赛', desc: '打进 XBA 超级联赛', coins: 200, ok: function (S) { return W().userPro(S).level === 1; } },
+    { id: 'lv1', cn: '超级联赛', desc: '打进 篮途超级联赛', coins: 200, ok: function (S) { return W().userPro(S).level === 1; } },
     { id: 'champ', cn: '联赛冠军', desc: '拿到任意一个联赛的冠军', coins: 80, ok: function (S) { return hasTrophy(S, /联赛.* 冠军$/); } },
-    { id: 'xba', cn: 'XBA 总冠军', desc: '拿到 XBA 超级联赛冠军', coins: 500, ok: function (S) { return hasTrophy(S, /XBA 超级联赛 冠军/); } },
-    { id: 'xcup', cn: '冠军杯之王', desc: '拿到 XBA杯冠军杯冠军', coins: 300, ok: function (S) { return hasTrophy(S, /冠军杯 冠军/); } },
+    { id: 'xba', cn: '篮途总冠军', desc: '拿到 篮途超级联赛冠军', coins: 500, ok: function (S) { return hasTrophy(S, /篮途超级联赛 冠军/); } },
+    { id: 'xcup', cn: '冠军杯之王', desc: '拿到 篮途杯冠军杯冠军', coins: 300, ok: function (S) { return hasTrophy(S, /冠军杯 冠军/); } },
     { id: 'wk9', cn: '胜者为王', desc: '胜者为王九连胜', coins: 100, ok: function (S) { return hasTrophy(S, /九连胜/); } },
     { id: 'scup', cn: '街头霸主', desc: '赢得一次街球杯赛冠军', coins: 20, ok: function (S) { return hasTrophy(S, /(新人杯|小杯赛|大杯赛).* 冠军$/); } },
     { id: 'big', cn: '大杯赛冠军', desc: '赢得街球大杯赛冠军', coins: 80, ok: function (S) { return hasTrophy(S, /大杯赛.* 冠军$/); } },

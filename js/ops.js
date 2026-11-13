@@ -128,9 +128,9 @@
   // ================= 新闻发布会 =================
   var PRESS = [
     { q: '今晚的对手 {opp} 实力不俗，你有信心吗？', a: [
-      { t: '我们一定能赢！', team: 0.03, opp: 0.03, fans: 0, d: '球队士气 +3%，对手斗志 +3%' },
-      { t: '尊重对手，我们会全力以赴。', team: 0.015, opp: 0, fans: 0, d: '球队士气 +1.5%' },
-      { t: '他们没那么可怕。', team: 0, opp: 0.05, fans: 0.01, d: '对手斗志 +5%，球迷 +1%' }] },
+      { t: '我们一定能赢！', team: 0.03, opp: 0.03, win: { fans: 0.03, trust: 3, hype: 5 }, lose: { fans: -0.02, trust: -4 }, d: '士气 +3%、对手斗志 +3%。赢了：球迷 +3%、董事会信任 +3；输了：球迷 -2%、信任 -4' },
+      { t: '尊重对手，我们会全力以赴。', team: 0.015, d: '士气 +1.5%，稳妥，没有风险' },
+      { t: '他们没那么可怕。', opp: 0.05, win: { fans: 0.05, hype: 8, fame: 3 }, lose: { fans: -0.03, trust: -3 }, d: '对手斗志 +5%。赢了：球迷 +5%、热度 +8、个人名气 +3；输了：球迷 -3%、信任 -3' }] },
     { q: '{p} 最近手感不好，你还会坚持用他吗？', player: 'cold', a: [
       { t: '我完全信任他，他很快会找回状态。', p: 0.04, d: '他的发挥 +4%' },
       { t: '他需要自己调整好。', p: -0.02, team: 0.01, d: '他的发挥 -2%，全队士气 +1%' },
@@ -139,7 +139,7 @@
       { t: '当然，他就是最好的！', p: 0.03, team: -0.01, fans: 0.01, d: '他的发挥 +3%，队友小小吃醋（-1%），球迷 +1%' },
       { t: '篮球是团队运动，大家都很棒。', team: 0.02, d: '全队士气 +2%' }] },
     { q: '外界都说你们这赛季冲不上去，你怎么看？', a: [
-      { t: '用成绩回应质疑。', team: 0.03, d: '球队士气 +3%' },
+      { t: '用成绩回应质疑。', team: 0.03, win: { trust: 3 }, lose: { trust: -3 }, d: '士气 +3%。赢了：信任 +3；输了：信任 -3' },
       { t: '我们会一步一步来。', trust: 2, d: '董事会信任 +2' },
       { t: '没什么好回应的。', d: '无影响' }] },
     { q: '有传闻说其他球队想挖你，你会离开吗？', a: [
@@ -167,8 +167,24 @@
     if (a.fans) pro.fans = Math.round(pro.fans * (1 + a.fans));
     if (a.trust) O.trust(S, a.trust);
     if (a.fame) O.life(S).fame += a.fame;
+    if (a.win || a.lose) S.pressBet = { day: S.dayNo, t: a.t, win: a.win || {}, lose: a.lose || {} };
     O.hype(S, 2);
     return null;
+  };
+  // 发布会放的话，赛后兑现：看今天你的职业队比赛（联赛 / 季后赛）输赢
+  O.pressResolve = function (S) {
+    var b = S.pressBet; if (!b) return;
+    if (b.day !== S.dayNo) { if (b.day < S.dayNo) S.pressBet = null; return; }
+    S.pressBet = null;
+    var pro = W().userPro(S);
+    var m = (S.myMatches || []).map(function (id) { return S.matches[id]; }).find(function (x) { return x && x.dayNo === S.dayNo && (x.type === 'league' || x.type === 'playoff'); });
+    if (!m) return;
+    var won = m.home.id === pro.id ? m.hs > m.as : m.as > m.hs, e = won ? b.win : b.lose, parts = [];
+    if (e.fans) { pro.fans = Math.max(300, Math.round(pro.fans * (1 + e.fans))); parts.push('球迷 ' + (e.fans > 0 ? '+' : '') + Math.round(e.fans * 100) + '%'); }
+    if (e.trust) { O.trust(S, e.trust); parts.push('董事会信任 ' + (e.trust > 0 ? '+' : '') + e.trust); }
+    if (e.hype) { O.hype(S, e.hype); parts.push('热度 +' + e.hype); }
+    if (e.fame) { O.life(S).fame += e.fame; parts.push('个人名气 +' + e.fame); }
+    if (parts.length) W().msg(S, (won ? '🎤 说到做到！' : '🎤 被打脸了……') + '赛前你说「' + b.t + '」，' + (won ? '赢下比赛：' : '输掉比赛：') + parts.join('，'), 'sys');
   };
 
   // ================= 热度与直播 =================
@@ -297,6 +313,7 @@
     var t = p.teamId && S.teams[p.teamId];
     if (t && t.isUser) return 3;
     if (p.seen && p.seen.pot) return 3;
+    if (p.wasMine || p.scoutGrade != null || (p.seen && p.seen.hidden)) return 3; // 自己带过 / 考察过隐藏属性的球员
     var base = O.fac(S, 'scout') >= 4 ? 2 : O.fac(S, 'scout') >= 2 ? 1 : 0;
     if (X.Manager.lv(S, 'eye') >= 1) base = Math.max(base, 1);
     return Math.max(base, (S.scouted && S.scouted[p.id]) || 0);

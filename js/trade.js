@@ -56,7 +56,7 @@
     });
     take.forEach(function (id) {
       var p = S.players[id];
-      W().removeFromTeam(S, team, p); W().addToTeam(S, pro, p); p.green = false; p.joined = S.dayNo;
+      W().removeFromTeam(S, team, p); W().addToTeam(S, pro, p); p.green = false; p.joined = S.dayNo; p.bought = true;
     });
     if (money > 0) W().spend(S, money, '交易补偿：' + team.name);
     if (money < 0) W().earn(S, -money, '交易补偿：' + team.name);

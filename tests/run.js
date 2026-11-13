@@ -99,6 +99,52 @@ test('AI 交易报价不再用替补 + 现金凑数换核心', function () {
   X.U.seed(null);
 });
 
+test('属性练满后也会体能轮换，不是五个主力打满全场', function () {
+  var X = require('./harness')(), W = X.World, E = X.Engine;
+  X.U.seed(3);
+  var S = W.newGame('测试', { difficulty: 'normal' });
+  W.finishOnboard(S, { manager: '测试', teamName: '测试队', color: '#c8102e', pro: S.onboard.pro.slice(0, 10), street: S.onboard.street.slice(0, 4) });
+  var pro = W.userPro(S), ps = W.teamPlayers(S, pro);
+  ps.forEach(function (p) { X.ATTRS.forEach(function (k) { p.a[k] = p.m[k] = 99; }); });
+  X.Coach.prepare(S, 'league', null);
+  var lg = S.leagues.find(function (l) { return l.teamIds.indexOf(pro.id) >= 0; }), mins = {}, N = 20;
+  for (var g = 0; g < N; g++) {
+    ps.forEach(function (p) { p.st = 100; });
+    var r = E.play(W.sideCfg(S, pro, 'league', { home: true }), W.sideCfg(S, S.teams[lg.teamIds[1 + g % 13]], 'league'), { kind: 'pro' });
+    for (var k in r.box.h) mins[r.box.h[k].pid] = (mins[r.box.h[k].pid] || 0) + r.box.h[k].min / N;
+  }
+  var m = Object.keys(mins).map(function (id) { return mins[id]; }).sort(function (a, b) { return b - a; });
+  console.log('   场均上场时间：' + m.map(function (x) { return x.toFixed(0); }).join(' / '));
+  assert.ok(m[0] <= 42, '主力场均 ' + m[0].toFixed(1) + ' 分钟，几乎打满');
+  assert.ok(m.filter(function (x) { return x >= 10; }).length >= 7, '上场 10 分钟以上的不到 7 人');
+  X.U.seed(null);
+});
+
+test('微波炉替补：从板凳上场后得分效率更高', function () {
+  var X = require('./harness')(), W = X.World, E = X.Engine;
+  function run(per) {
+    X.U.seed(9);
+    var S = W.newGame('测试', { difficulty: 'normal' });
+    W.finishOnboard(S, { manager: '测试', teamName: '测试队', color: '#c8102e', pro: S.onboard.pro.slice(0, 10), street: S.onboard.street.slice(0, 4) });
+    var pro = W.userPro(S), ps = W.teamPlayers(S, pro);
+    ps.forEach(function (p) { p.persona = 'calm'; });
+    X.Coach.prepare(S, 'league', null);
+    var pr = pro.boards.league.presets, bench = pr[1].lineup.filter(function (id) { return pr[0].lineup.indexOf(id) < 0; });
+    bench.forEach(function (id) { S.players[id].persona = per; });
+    var lg = S.leagues.find(function (l) { return l.teamIds.indexOf(pro.id) >= 0; }), pts = 0, min = 0;
+    for (var g = 0; g < 30; g++) {
+      ps.forEach(function (p) { p.st = 100; });
+      var r = E.play(W.sideCfg(S, pro, 'league', { home: true }), W.sideCfg(S, S.teams[lg.teamIds[1 + g % 13]], 'league'), { kind: 'pro' });
+      for (var k in r.box.h) { var b = r.box.h[k]; if (bench.indexOf(b.pid) >= 0) { pts += b.pts; min += b.min; } }
+    }
+    return pts / min * 36;
+  }
+  var calm = run('calm'), mw = run('microwave');
+  console.log('   替补每 36 分钟得分：平常心 ' + calm.toFixed(1) + '，微波炉 ' + mw.toFixed(1));
+  assert.ok(mw > calm * 1.08, '微波炉没有明显多得分');
+  X.U.seed(null);
+});
+
 test('AI 进攻战术不再一边倒（单一战术占比 < 65%）', function () {
   var X = require('./harness')(), W = X.World;
   X.U.seed(5);

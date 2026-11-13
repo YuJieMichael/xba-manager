@@ -51,6 +51,29 @@
       var p3 = U.pick(ps), v3 = P.value(p3);
       listing(S, 'pro', p3, { days: U.ri(2, 3), open: true, price: Math.round(v3 * U.rf(0.5, 0.75) / 1000) * 1000, aiMax: U.chance(0.6) ? Math.round(v3 * U.rf(0.8, 1.3)) : 0, fromTeam: t.id });
     }
+    // 球星挂牌：同级或高一级联赛 AI 球队的头牌，以及全联盟潜力最好的年轻人（紫色以上）
+    var hot = S.market.filter(function (l) { return l.hot; });
+    var aiPro = Object.keys(S.teams).map(function (k) { return S.teams[k]; }).filter(function (t) { return !t.isUser && t.kind === 'pro' && t.playerIds.length > 9; });
+    var hotTries = 0;
+    while (hot.filter(function (l) { return l.hot === 'star'; }).length < 2 && hotTries++ < 30) {
+      var ts = aiPro.filter(function (t) { return t.level <= lv && t.level >= lv - 1; });
+      if (!ts.length) break;
+      var tt = U.pick(ts);
+      var cand = W().teamPlayers(S, tt).filter(function (x) { return !x.listing && x.age <= 31; }).sort(function (a, b) { return P.ovr(b) - P.ovr(a); }).slice(0, 2);
+      if (!cand.length) continue;
+      var ps5 = U.pick(cand), v5 = P.value(ps5);
+      var ls = listing(S, 'pro', ps5, { days: U.ri(2, 3), open: true, price: Math.round(v5 * U.rf(0.85, 1.05) / 1000) * 1000, aiMax: U.chance(0.5) ? Math.round(v5 * U.rf(0.95, 1.25)) : 0, fromTeam: tt.id });
+      ls.hot = 'star'; hot.push(ls);
+    }
+    if (!hot.some(function (l) { return l.hot === 'prospect'; })) {
+      var young = [];
+      aiPro.forEach(function (t) { W().teamPlayers(S, t).forEach(function (x) { if (!x.listing && x.age <= 22 && P.potRemain(x) >= 37) young.push([x, t]); }); });
+      if (young.length) {
+        var yp = U.pick(young), v6 = P.value(yp[0]);
+        var ly = listing(S, 'pro', yp[0], { days: U.ri(2, 3), open: true, price: Math.round(v6 * U.rf(0.9, 1.1) / 1000) * 1000, aiMax: U.chance(0.6) ? Math.round(v6 * U.rf(1, 1.35)) : 0, fromTeam: yp[1].id });
+        ly.hot = 'prospect';
+      }
+    }
     // 极限球员（赛季中开放）
     if (S.day >= 13 && S.day <= 26) {
       while (cnt('extreme') < 6) {
@@ -118,7 +141,7 @@
     W().spend(S, price, M.NAMES[l.mk] + '：' + p.name);
     if (l.fromTeam && S.teams[l.fromTeam]) W().removeFromTeam(S, S.teams[l.fromTeam], p);
     W().addToTeam(S, team, p);
-    if (toPro) { p.salary = Math.round(P.salaryFor(p) * X.Manager.salaryMul(S)); p.contract = U.ri(26, 52); p.green = false; p.tp = 0; }
+    if (toPro) { p.salary = Math.round(P.salaryFor(p) * X.Manager.salaryMul(S)); p.contract = U.ri(26, 52); p.green = false; p.tp = 0; if (l.mk !== 'sdraft') p.bought = true; }
     else { p.salary = 0; p.contract = 0; }
     p.joined = S.dayNo;
     W().msg(S, '竞拍成功！' + p.name + ' 以 ' + U.money(price) + ' 加盟' + team.name, 'market');

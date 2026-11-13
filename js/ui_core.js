@@ -145,7 +145,7 @@
       h += UI.btn('谈话', 'talk', { pid: p.id }, 'sm');
       if (S.user.items.physio > 0) h += UI.btn('理疗', 'physio', { pid: p.id }, 'sm');
       if (!street) h += X.Awards.inHof(S, p.id) ? UI.btn('更新名人堂', 'hofadd', { pid: p.id }, 'sm') : UI.btn('入选名人堂', 'hofadd', { pid: p.id }, 'sm');
-      if (!street && P.isMaxed(p) && (p.star || 0) < X.STAR_MAX) h += UI.btn('升星', 'starup', { pid: p.id }, 'sm on');
+      if (!street && P.starReady(p) && (p.star || 0) < X.STAR_MAX) h += UI.btn('升星', 'starup', { pid: p.id }, 'sm on');
       h += '</div>';
     }
     return h + '</div>';

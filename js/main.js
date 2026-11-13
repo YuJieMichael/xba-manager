@@ -21,6 +21,8 @@
       // 街球训练点改为全队共用
       if (S.user.streetTP == null) { S.user.streetTP = 0; Object.keys(S.players).forEach(function (id) { var p = S.players[id]; if (p.tp) { S.user.streetTP += p.tp; p.tp = 0; } }); }
       Object.keys(S.players).forEach(function (id) { X.P.persona(S.players[id]); });
+      // 新性格「微波炉」：旧存档里一部分平常心球员转成微波炉
+      if (!S.migMicrowave) { S.migMicrowave = true; Object.keys(S.players).forEach(function (id) { var p = S.players[id]; if (p.persona === 'calm' && Math.random() < 0.15) p.persona = 'microwave'; }); }
     }
   }
   function boot() {

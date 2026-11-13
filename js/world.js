@@ -622,6 +622,7 @@
     var seasonEnded = false;
     if (S.day === X.SEASON_END) { X.Legend.run(S, out); W.seasonEnd(S, out); seasonEnded = true; }
 
+    X.Ops.pressResolve(S);
     S.dayNo += 1;
     if (seasonEnded) { S.day = 0; }
     else S.day += 1;

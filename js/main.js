@@ -21,6 +21,7 @@
       // 街球训练点改为全队共用
       if (S.user.streetTP == null) { S.user.streetTP = 0; Object.keys(S.players).forEach(function (id) { var p = S.players[id]; if (p.tp) { S.user.streetTP += p.tp; p.tp = 0; } }); }
       Object.keys(S.players).forEach(function (id) { X.P.persona(S.players[id]); });
+      X.Story.init(S);
     }
   }
   function boot() {

@@ -115,6 +115,48 @@ test('AI 进攻战术不再一边倒（单一战术占比 < 65%）', function ()
   X.U.seed(null);
 });
 
+test('每日悬念：几乎每天都有揭晓或预告', function () {
+  var X = require('./harness')(), W = X.World, ST = X.Story;
+  var S = newWorld(X, 21), days = 0, withReveal = 0, withTease = 0;
+  ST.buyAtmo(S, 'mascot'); ST.buyAtmo(S, 'food');
+  for (var d = 0; d < 40; d++) {
+    var out = W.advance(S); days++;
+    if ((out.reveals || []).length) withReveal++;
+    if (ST.teasers(S).length >= 2) withTease++;
+    S.story.asks.slice().forEach(function (a) { ST.choose(S, a.id, 0); });
+  }
+  console.log('   ' + days + ' 天里 ' + withReveal + ' 天有揭晓，' + withTease + ' 天有 2 条以上预告');
+  assert.ok(withReveal / days >= 0.8, '有揭晓的天数太少');
+  assert.ok(withTease / days >= 0.7, '有预告的天数太少');
+  X.U.seed(null);
+});
+
+test('新秀卡进入选秀池，球员退役会问要不要留队当名宿，传承点能结算和加点', function () {
+  var X = require('./harness')(), W = X.World, ST = X.Story;
+  var S = newWorld(X, 8), pro = W.userPro(S);
+  var cls = ST.prospects(S).map(function (p) { return p.id; });
+  assert.strictEqual(cls.length, 30);
+  // 让一名队员赛季末退役
+  var old = W.teamPlayers(S, pro)[0]; old.age = 40; old.retireAge = 38;
+  playSeason(X, S);
+  assert.ok(S.draft, '没有选秀');
+  var inPool = S.draft.done ? cls.filter(function (id) { return S.players[id] && S.players[id].teamId; }).length : cls.filter(function (id) { return S.draft.pool.indexOf(id) >= 0; }).length;
+  assert.ok(inPool > 0, '新秀卡没进选秀池');
+  var ask = S.story.asks.find(function (a) { return a.kind === 'alumni'; });
+  assert.ok(ask, '退役没有询问名宿');
+  assert.strictEqual(ST.choose(S, ask.id, 0), null);
+  assert.strictEqual(S.user.alumni.length, 1);
+  var H = S.user.heritage;
+  assert.ok(H.total >= 2, '传承点没结算');
+  H.pts = 10; var m0 = S.user.money;
+  assert.strictEqual(ST.buy(S, 'seed'), null);
+  assert.strictEqual(S.user.money - m0, 300000);
+  var S2 = W.rebirth(S, null, 'money');
+  assert.strictEqual(S2.user.heritage.tree.seed, 1, '重生丢了传承');
+  assert.strictEqual(S2.user.alumni.length, 1, '重生丢了名宿');
+  X.U.seed(null);
+});
+
 if (!quick) test('战术平衡：没有万金油，每套进攻都有克星', function () {
   var r = require('./tactics')(150, 1);
   var bad = [];

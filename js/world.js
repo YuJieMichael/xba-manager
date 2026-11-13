@@ -6,6 +6,7 @@
 
   var FANS_BASE = { 1: 35000, 2: 15000, 3: 7000, 4: 3000 };
   var TICKET_REF = { 1: 95, 2: 65, 3: 45, 4: 30 };
+  W.TICKET_REF = TICKET_REF;
   var BRANDS = ['耐克', '阿迪达斯', '李宁', '安踏', '匹克', '特步', '361°', '可口可乐', '百事可乐', '红牛', '佳得乐', '王老吉', '蒙牛', '伊利', '青岛啤酒', '雪花啤酒', '中国移动', '联想', '海尔', '格力', '美的', '长虹', '康师傅', '统一', '娃哈哈', '农夫山泉', '肯德基', '麦当劳', '必胜客', '腾讯QQ', '网易', '新浪', '盛大', '九城', '巨人网络', '金山', '步步高', '诺基亚', '摩托罗拉', '三星', '索尼', '飞利浦'];
 
   W.levelInfo = function (lv) { return X.LEVELS[lv - 1]; };
@@ -17,6 +18,7 @@
     if (!t || !t.isUser) return 1;
     var m = W.diff(S).train * X.Ops.trainMul(S) * X.Ops.energyMul(S);
     ((S.user.legacy && S.user.legacy.bonuses) || []).forEach(function (b) { if (b === 'train') m *= 1.1; });
+    if (X.Story) m *= X.Story.trainMul(S, p);
     return m;
   };
   W.userPro = function (S) { return S.teams[S.user.proId]; };
@@ -291,6 +293,7 @@
       cfg.status = W.lineupStatus(S, team) * (team.isUser ? (1 + 0.01 * X.Manager.lv(S, 'locker')) * (1 - (S.user.chemPen || 0)) : 1);
       if (S.pressOpp && S.pressOpp.tid === team.id && S.pressOpp.day === S.dayNo) cfg.status *= S.pressOpp.m;
       cfg.morale = team.morale || 1;
+      if (team.isUser && cfg.home === undefined && extra && extra.home && X.Story) cfg.homeAdv = X.Story.homeAdv(S);
     } else {
       cfg.presets = team.presets; cfg.config = team.config; cfg.status = 1;
     }
@@ -404,6 +407,7 @@
     var ref = TICKET_REF[team.level];
     var g = team.rec.w + team.rec.l, wr = g ? team.rec.w / g : 0.5;
     var demand = team.fans * (0.8 + 0.4 * wr) * X.Ops.hypeMul(S) * U.clamp(Math.pow(ref / Math.max(1, team.ticket), 1.4), 0, 1.6);
+    if (team.isUser && X.Story) demand *= X.Story.demandMul(S, team);
     return Math.round(Math.min(seats, demand));
   };
 
@@ -415,7 +419,7 @@
       var att = W.attendance(S, team);
       team.lastAtt = att;
       W.earn(S, att * team.ticket * rm * hm, '主场门票（' + att + '人）' + (rival ? '·宿敌对决' : ''));
-      var jersey = U.sum(W.teamPlayers(S, team).map(function (p) { return p.support / 100; })) * team.fans * (won ? 1.4 : 1.0);
+      var jersey = U.sum(W.teamPlayers(S, team).map(function (p) { return p.support / 100; })) * team.fans * (won ? 1.4 : 1.0) * (X.Story ? X.Story.jerseyMul(S, team) : 1);
       W.earn(S, jersey * rm, '球衣销售' + (rival ? '·宿敌对决' : ''));
     }
     var df = won ? 0.008 + Math.min(30, margin) * 0.0007 : -0.004 + Math.max(-30, margin) * 0.0002;

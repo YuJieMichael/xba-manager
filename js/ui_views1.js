@@ -166,7 +166,7 @@
         if (p.listing) ops.push('<span class="tag">挂牌中</span>');
         else ops.push(UI.link('出售', 'sellpro', { pid: p.id }));
         if (p.contract < 10) ops.push(UI.link('续约', 'renew', { pid: p.id }, 'hot'));
-        if (P.isMaxed(p) && (p.star || 0) < X.STAR_MAX) ops.push(UI.link('升星', 'starup', { pid: p.id }, 'hot'));
+        if (P.starReady(p) && (p.star || 0) < X.STAR_MAX) ops.push(UI.link('升星', 'starup', { pid: p.id }, 'hot'));
         return '<tr><td>' + UI.pname(p) + '</td><td><b>' + UI.ovrTag(P.ovr(p)) + '</b></td><td>' + p.pos + '</td><td>' + UI.stam(p.st) + '</td><td>' + p.num + '</td><td>' + p.age + '</td><td>' + p.h + '</td><td>' + p.w + '</td><td>' + U.money(p.salary) + '</td><td class="' + (p.contract < 10 ? 'red' : '') + '">' + p.contract + '</td><td>' + Math.round(p.support) + '</td><td>' + ops.join(' ') + '</td></tr>';
       }).join('') + '</table>';
       h += '<div class="sumline">球员工资总额：' + UI.money(pay) + '/轮　工资帽：' + UI.money(cap) + '　阵容状态：<b>' + Math.round(W().lineupStatus(S, pro) * 100) + '%</b>　化学反应：<b title="由球员性格决定：领袖、老好人加分，刺头多了扣分">' + Math.round(P.chemistry(ps) * 100) + '%</b>　人数 ' + ps.length + '/' + M().PRO_MAX + '（最少 ' + M().PRO_MIN + '）' +
@@ -343,7 +343,7 @@
         return '<tr><td>' + UI.pname(p) + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td>' + UI.stam(p.st) + '</td><td><b class="ovr">' + UI.ovrTag(P.ovr(p)) + '</b></td>' + X.ATTRS.map(function (k) {
           var band = P.potBand(p.m[k] - p.a[k]);
           return '<td><span class="tv" style="border-bottom:3px solid ' + (vis ? X.POT_COLORS[band] : '#ccc') + '">' + p.a[k].toFixed(1) + '</span><br>' + (pool >= pcost ? '<a class="plus" data-act="trainpro" data-pid="' + p.id + '" data-k="' + k + '">+</a>' : '') + '</td>';
-        }).join('') + '<td><select data-change="protrain" data-pid="' + p.id + '">' + opts + '</select></td><td>' + (P.isMaxed(p) && (p.star || 0) < X.STAR_MAX ? UI.btn('升星', 'starup', { pid: p.id }, 'sm on nowrap') : P.isMaxed(p) ? '<span class="pstar">满星</span>' : P.potRemain(p).toFixed(1)) + '</td><td>' + (pool >= pcost ? UI.btn('一键加点', 'proauto', { pid: p.id }, 'sm nowrap') : '') + '</td></tr>';
+        }).join('') + '<td><select data-change="protrain" data-pid="' + p.id + '">' + opts + '</select></td><td>' + (P.starReady(p) && (p.star || 0) < X.STAR_MAX ? UI.btn('升星', 'starup', { pid: p.id }, 'sm on nowrap') : P.isMaxed(p) ? '<span class="pstar">满星</span>' : P.potRemain(p).toFixed(1)) + '</td><td>' + (pool >= pcost ? UI.btn('一键加点', 'proauto', { pid: p.id }, 'sm nowrap') : '') + '</td></tr>';
       }).join('') + '</table>';
       if (UI.lastTrain) h += UI.box('训练结果', UI.lastTrain.map(function (m) { return '<div>' + esc(m) + '</div>'; }).join(''));
     }
@@ -462,7 +462,7 @@
     var star = p.star || 0, need = P.starCost(p), own = S.user.items.starcard || 0;
     var err = P.canStarUp(S, p);
     UI.modal('升星：' + esc(p.name), '<p>当前星级：<span class="pstar">' + (star ? '★'.repeat(star) : '无') + '</span>　→　<span class="pstar">' + '★'.repeat(star + 1) + '</span></p>' +
-      '<p>' + esc(p.name) + (P.isMaxed(p) ? ' 已经训满。' : ' 训满后才能升星。') + '升星会突破他的潜力上限：位置重要的能力上限 +10~14，次要能力 +6~9，其他 +4~6（最高可到 ' + X.ATTR_CAP + '）。</p>' +
+      '<p>' + esc(p.name) + (P.starReady(p) ? (p.bought && !P.isMaxed(p) ? ' 是转会来的成名球员，不用完全训满就能升星。' : ' 已经训满。') : ' 训满后才能升星。') + '升星会突破他的潜力上限：位置重要的能力上限 +10~14，次要能力 +6~9，其他 +4~6（最高可到 ' + X.ATTR_CAP + '）。' + (p.bought ? '<b>转会球员升星时，当前能力也会直接涨提升量的一半。</b>' : '') + '</p>' +
       '<p>需要升星卡 <b>' + need + '</b> 张，你有 <b class="' + (own < need ? 'red' : 'ok') + '">' + own + '</b> 张。' + (own < need ? '（50 游戏币一张）' + UI.btn('补齐差的 ' + (need - own) + ' 张（' + (need - own) * 50 + ' 游戏币）', 'starbuy', { pid: p.id, n: need - own }, 'sm on') : '') + '</p>' +
       '<p>' + (err ? '<span class="red">' + esc(err) + '</span> ' + UI.btn('去道具商店', 'go', { r: 'shop' }, 'sm') : UI.btn('确认升星', 'starupdo', { pid: p.id }, 'big')) + '</p>');
   };

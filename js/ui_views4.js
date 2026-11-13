@@ -14,7 +14,7 @@
     var DESC = {
       free: '街头自由球员买到后进入<b>街球队</b>。暗拍：截止后，在不低于球员暗拍最低价的情况下，出价最高者得；你看不到别人的出价。每个球员只能出价一次。小秘书的提示价是“舍去”形式的（最低价 49999 也会提示“40000 以上”），保险起见多出一点。',
       sdraft: '街球选秀的球员进入<b>职业队</b>，暗拍。身材好的球员价格非常高。注意：这些球员再次出售只能得到市场价的 5%。',
-      pro: '职业转会采用<b>明拍</b>：每次加价必须高于当前价 5%，截止时出价最高者得。截止前有人出价会延时。买入后进入职业队。经理拍卖出来的球员可以看到潜力星星。',
+      pro: '职业转会采用<b>明拍</b>：每次加价必须高于当前价 5%，截止时出价最高者得。截止前有人出价会延时。买入后进入职业队。经理拍卖出来的球员可以看到潜力星星。<br>⭐<b>球星</b>是同级或高一级联赛球队的头牌，🌱<b>潜力新星</b>是全联盟潜力紫色以上的年轻人。<b>职业转会、极限球员、球员交易买来的球员潜力剩余低于 ' + P.BOUGHT_READY + ' 就能升星，升星时当前能力也直接涨一半。</b>',
       extreme: '极限球员在赛季中期开放，都是高水平球员，暗拍，进入职业队。',
       watch: '你出过价或关注的球员。',
       mine: '你挂牌出售的球员。'
@@ -23,7 +23,7 @@
     var list;
     if (tab === 'watch') list = S.market.filter(function (l) { return S.user.watch.indexOf(l.id) >= 0; });
     else if (tab === 'mine') list = S.market.filter(function (l) { return l.seller === 'user'; });
-    else list = S.market.filter(function (l) { return l.mk === tab && l.seller !== 'user'; });
+    else list = S.market.filter(function (l) { return l.mk === tab && l.seller !== 'user'; }).sort(function (a, b) { return (b.hot ? 1 : 0) - (a.hot ? 1 : 0); });
     if (!list.length) return h + '<span class="muted">暂无球员</span>';
     var showStars = tab === 'pro' || tab === 'watch';
     h += '<table class="grid"><tr><th>姓名</th><th>综合</th>' + (showStars ? '<th>潜力</th>' : '') + '<th>价格</th><th>年龄</th><th>位置</th><th>市场</th><th>身高</th><th>体重</th><th>截止</th><th>状态</th><th>操作</th></tr>' + list.map(function (l) {
@@ -45,7 +45,8 @@
       }
       var watch = S.user.watch.indexOf(l.id) >= 0;
       if (l.seller !== 'user') ops += ' ' + UI.link(watch ? '取消关注' : '关注', 'watch', { id: l.id });
-      return '<tr><td>' + UI.pname(p) + '</td><td><b>' + UI.ovrFog(p) + '</b></td>' + (showStars ? '<td>' + (l.mk === 'pro' ? UI.stars(P.stars(p)) : '-') + '</td>' : '') + '<td>' + price + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td class="small">' + M().NAMES[l.mk] + '</td><td>' + p.h + '</td><td>' + p.w + '</td>' +
+      var tag = l.hot === 'star' ? ' <span class="tag" style="background:#d6a400;color:#fff">⭐球星</span>' : l.hot === 'prospect' ? ' <span class="tag" style="background:#2e9b2e;color:#fff">🌱潜力新星</span>' : '';
+      return '<tr><td>' + UI.pname(p) + tag + '</td><td><b>' + UI.ovrFog(p) + '</b></td>' + (showStars ? '<td>' + (l.mk === 'pro' ? UI.stars(P.stars(p)) : '-') + '</td>' : '') + '<td>' + price + '</td><td>' + p.age + '</td><td>' + p.pos + '</td><td class="small">' + M().NAMES[l.mk] + '</td><td>' + p.h + '</td><td>' + p.w + '</td>' +
         '<td>' + (days <= 0 ? '今天' : days + ' 天后') + '</td><td>' + status + '</td><td>' + ops + '</td></tr>';
     }).join('') + '</table><p class="muted small">交易在「进入下一天」时结算，成交后球员到队。</p>';
     return h;

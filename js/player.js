@@ -234,12 +234,15 @@
 
   // ===== 升星：训满后突破潜力上限 =====
   P.isMaxed = function (p) { return P.potRemain(p) < 2; };
+  // 转会买来的成名球员（职业转会 / 极限球员 / 球员交易）：潜力剩余 < 12 就能升星，升星时能力也直接涨一半
+  P.BOUGHT_READY = 12;
+  P.starReady = function (p) { return P.potRemain(p) < (p.bought ? P.BOUGHT_READY : 2); };
   P.starCost = function (p) { return (p.star || 0) + 1; };
   P.canStarUp = function (S, p) {
     var team = p.teamId && S.teams[p.teamId];
     if (!team || team.kind !== 'pro') return '只有职业队球员才能升星';
     if ((p.star || 0) >= X.STAR_MAX) return '已经是最高 ' + X.STAR_MAX + ' 星';
-    if (!P.isMaxed(p)) return '还没训满（潜力剩余 ' + P.potRemain(p).toFixed(1) + '，需要低于 2）';
+    if (!P.starReady(p)) return '还没训满（潜力剩余 ' + P.potRemain(p).toFixed(1) + '，需要低于 ' + (p.bought ? P.BOUGHT_READY : 2) + '）';
     var need = P.starCost(p);
     if ((S.user.items.starcard || 0) < need) return '升到 ' + ((p.star || 0) + 1) + ' 星需要 ' + need + ' 张升星卡（拥有 ' + (S.user.items.starcard || 0) + ' 张）';
     return null;
@@ -256,6 +259,7 @@
       var nm = Math.min(X.ATTR_CAP, p.m[k] + g);
       gains[k] = nm - p.m[k];
       p.m[k] = nm;
+      if (p.bought) p.a[k] = Math.min(nm, p.a[k] + gains[k] * 0.5); // 成名球员经验足，升星后能力立刻涨一半
     });
     p.mood = 100;
     return { gains: gains };

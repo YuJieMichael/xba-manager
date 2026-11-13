@@ -20,13 +20,14 @@
     return { pid: p.id, name: p.name, pos: p.pos, team: t ? t.name : '', user: !!(t && t.isUser), award: cat, val: U.r1(val) };
   }
 
-  function give(S, p, label) {
+  function give(S, p, label, cards) {
     p.awards = p.awards || [];
     p.awards.push(label);
     var t = S.teams[p.teamId];
     if (t && t.isUser) {
       W().msg(S, '🏅 ' + p.name + ' 获得 ' + label, 'player');
       S.user.trophies.push({ season: S.season, name: p.name + '：' + label });
+      if (t.kind === 'pro') W().giveStarcards(S, cards || 1, p.name + ' 获得 ' + label);
     }
   }
 
@@ -43,7 +44,7 @@
         ps.forEach(function (p) { var v = c.f(p.stats); if (v > bv) { bv = v; best = p; } });
         if (!best) return;
         rec.list.push(entry(S, best, c.cn, bv));
-        give(S, best, '第' + S.season + '赛季 ' + lg.name + ' ' + c.cn);
+        give(S, best, '第' + S.season + '赛季 ' + lg.name + ' ' + c.cn, c.id === 'mvp' ? 2 : 1);
         if (c.id === 'mvp') X.ATTRS.forEach(function (k) { best.m[k] = Math.min(X.ATTR_CAP, best.m[k] + U.rf(0, 1.2)); });
       });
       // 最佳阵容：每个位置 MVP 积分最高者

@@ -31,6 +31,12 @@
     return '第 ' + S.season + ' 赛季 ' + (S.day === 13 ? '赛季中休息日' : '赛季末休息日');
   };
 
+  // 免费升星卡：联赛名次、升级、赛季奖项、全明星、XBA杯、胜者为王都会发
+  W.giveStarcards = function (S, n, why) {
+    if (!(n > 0)) return;
+    S.user.items.starcard = (S.user.items.starcard || 0) + n;
+    W.msg(S, '🌟 ' + why + '：获得升星卡 ×' + n + '（现有 ' + S.user.items.starcard + ' 张）', 'player');
+  };
   W.msg = function (S, txt, type) {
     S.msgs.unshift({ id: U.uid(S, 'm'), season: S.season, day: S.day, txt: txt, type: type || 'sys', read: false });
     if (S.msgs.length > 300) S.msgs.length = 300;
@@ -649,6 +655,7 @@
           W.earn(S, prize, lg.name + names[i] + '奖金');
           S.user.trophies.push({ season: S.season, name: lg.name + (i === 0 ? ' 冠军' : names[i]) });
           W.msg(S, '恭喜！球队获得 ' + lg.name + names[i] + '，奖金 ' + U.money(prize), 'fin');
+          W.giveStarcards(S, [3, 2, 1][i], lg.name + names[i]);
         });
       });
       if (st[0].isUser) { S.user.trophies.push({ season: S.season, name: lg.name + ' 常规赛第一' }); W.msg(S, '球队获得 ' + lg.name + ' 常规赛第一！', 'fin'); }
@@ -822,7 +829,7 @@
       if (mv.t.isUser) {
         var up = mv.to < mv.from.level;
         W.msg(S, up ? '恭喜！球队升级到 ' + lg.name + '！' : '很遗憾，球队降级到 ' + lg.name, 'sys');
-        if (up) S.user.trophies.push({ season: S.season, name: '升级至 ' + lg.name });
+        if (up) { S.user.trophies.push({ season: S.season, name: '升级至 ' + lg.name }); W.giveStarcards(S, 2, '升级至 ' + lg.name); }
       }
     });
     // 最底层补充新球队

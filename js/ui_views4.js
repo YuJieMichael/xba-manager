@@ -90,7 +90,7 @@
   // ===== 道具商店 =====
   V.shop = function () {
     var S = UI.S;
-    var h = '<div class="sumline">游戏币：<b>' + S.user.coins + '</b>　<span class="muted">游戏币获得途径：胜者为王（王者积分 1:1 兑换）、街头竞价出售街球员</span>　会员：<b class="ok">已开通</b>（单机版免费：文字直播、色条 1 天显示、一键加点、税收优惠）</div>';
+    var h = '<div class="sumline">游戏币：<b>' + S.user.coins + '</b>　<span class="muted">游戏币获得途径：胜者为王（王者积分 1:1 兑换）、街头竞价出售街球员。升星卡免费来源：联赛前三 / 升级、MVP 等赛季奖项、全明星、XBA杯冠军杯、胜者为王 6 / 9 连胜、赛季目标</span>　会员：<b class="ok">已开通</b>（单机版免费：文字直播、色条 1 天显示、一键加点、税收优惠）</div>';
     h += UI.box('游戏币充值（单机版免费）', '<p>原版比例 1 元 = 100 游戏币。单机版不收钱，点一下直接到账。</p><p>' +
       [[100, '1 元'], [1000, '10 元'], [5000, '50 元'], [10000, '100 元']].map(function (x) { return UI.btn('充 ' + x[1] + '（' + x[0] + ' 游戏币）', 'recharge', { v: x[0] }, 'sm'); }).join(' ') +
       '　自定义：<input id="recharge-v" type="number" min="1" step="100" value="500" style="width:90px"> ' + UI.btn('充值', 'recharge', {}, 'sm') + '</p>');

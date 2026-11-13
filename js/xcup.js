@@ -159,6 +159,7 @@
     if (prize) W().earn(S, prize, name);
     if (place <= 1) S.user.trophies.push({ season: S.season, name: '第' + S.season + '赛季 ' + name });
     if (place === 0) W().userPro(S).fans += 800;
+    W().giveStarcards(S, key === 'champ' ? [3, 2, 1][place] || 0 : place === 0 ? 1 : 0, name);
     W().msg(S, name + (prize ? '，获得奖金 ' + U.money(prize) : ''), 'cup');
   }
 

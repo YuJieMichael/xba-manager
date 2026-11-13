@@ -87,11 +87,11 @@
       presets: cfg.presets, config: cfg.config, prof: cfg.prof || { off: {}, def: {} },
       status: (cfg.status == null ? 1 : cfg.status) * P.chemistry(cfg.players), home: !!cfg.home,
       court: [], curPreset: -1, pts: 0, fouls: 0, box: {}, trailLock: false, leadLock: false,
-      used: { off: {}, def: {} }, form: 1 + U.gauss() * 0.035
+      used: { off: {}, def: {} }, form: 1 + U.gauss() * 0.035, autoSub: cfg.autoSub !== false && !cfg.noStamina
     };
     side.roster.forEach(function (p) {
       p._st = cfg.noStamina ? 100 : p.st;
-      p._out = false; p._pf = 0; p._sec = 0;
+      p._out = false; p._pf = 0; p._sec = 0; p._rest = false;
       p._morale = cfg.morale || 1;
       p._foc = 1;
       P.favs(p);
@@ -123,12 +123,30 @@
   }
 
   // 按预设填充场上阵容；不可用的球员由替补中最合适的顶上
+  // 体能轮换：阵容里的球员体力低于 SUB_AT 时，替补席上更合适（按当前体力折算）的人顶上；歇到 BACK_AT 再回来
+  var SUB_AT = 80, BACK_AT = 92, SUB_TOL = 0.92, REST_TOL = 0.8;
+  function needsRest(p) {
+    if (p._rest && p._st >= BACK_AT) p._rest = false;
+    return p._rest || p._st < SUB_AT;
+  }
   function fillCourt(side, lg, quiet) {
     var pr = preset(side), prev = side.court.slice(), used = {}, court = [];
+    var inLineup = {};
+    (pr.lineup || []).forEach(function (id) { if (id) inLineup[id] = 1; });
     for (var s = 0; s < side.nslots; s++) {
       var pid = pr.lineup && pr.lineup[s];
       var p = pid && side.roster.find(function (x) { return x.id === pid; });
-      if (p && !p._out && !used[p.id]) { court[s] = p; used[p.id] = 1; }
+      if (!p || p._out || used[p.id]) continue;
+      if (side.autoSub && needsRest(p)) {
+        var col = side.cols[s], mine = slotScore(p, col), sub = null, bs = mine * (p._rest ? REST_TOL : SUB_TOL);
+        side.roster.forEach(function (x) {
+          if (x._out || used[x.id] || inLineup[x.id] || x._rest) return;
+          var sc = slotScore(x, col) * (prev[s] === x ? 1.05 : 1); // 已经在场上的替补优先留着，免得来回换
+          if (sc > bs) { bs = sc; sub = x; }
+        });
+        if (sub) { p._rest = true; court[s] = sub; used[sub.id] = 1; continue; }
+      }
+      court[s] = p; used[p.id] = 1;
     }
     for (s = 0; s < side.nslots; s++) {
       if (court[s]) continue;
@@ -147,6 +165,11 @@
       for (s = 0; s < side.nslots; s++) {
         if (prev[s] && court[s] && prev[s] !== court[s]) lg(side.name + ' 换人：' + court[s].name + ' 替换 ' + prev[s].name, 'sub');
       }
+    } else if (lg && prev.length) {
+      // 战术没变时的换人只来自体能轮换（下场休息 / 歇够了回来）
+      var ins = court.filter(function (p) { return p && prev.indexOf(p) < 0; });
+      var outs = prev.filter(function (p) { return p && court.indexOf(p) < 0 && !p._out; });
+      ins.forEach(function (p, i) { if (outs[i]) lg(side.name + ' 换人：' + p.name + ' 替换 ' + outs[i].name + '（体能轮换）', 'sub'); });
     }
     return court.filter(Boolean).length >= side.nslots;
   }
@@ -297,11 +320,11 @@
         side.court.forEach(function (p) {
           onIds[p.id] = 1;
           p._sec += sec;
-          if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.0075 + 0.01 * (1 - p.a.sta / 100)) * (2 - TF(p, 'ironman', 0.25)) * drainMul * RULES.drain * (1 + (intensity - 2) * 0.25));
+          if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.013 + 0.0055 * (1 - p.a.sta / 100)) * (2 - TF(p, 'ironman', 0.25)) * drainMul * RULES.drain * (1 + (intensity - 2) * 0.25));
           side.used.off[preset(side).off] = (side.used.off[preset(side).off] || 0) + sec;
           side.used.def[preset(side).def] = (side.used.def[preset(side).def] || 0) + sec;
         });
-        side.roster.forEach(function (p) { if (!onIds[p.id] && !p._out) p._st = Math.min(100, p._st + sec * 0.004); });
+        side.roster.forEach(function (p) { if (!onIds[p.id] && !p._out) p._st = Math.min(100, p._st + sec * 0.015); });
       });
     }
 
@@ -581,7 +604,7 @@
       };
       [H, A].forEach(function (side) { side.roster.forEach(function (p) { res.stam[p.id] = p._st; }); });
       // 清理临时字段
-      [H, A].forEach(function (side) { side.roster.forEach(function (p) { delete p._st; delete p._out; delete p._pf; delete p._sec; delete p._morale; delete p._tr; delete p._boost; delete p._foc; }); });
+      [H, A].forEach(function (side) { side.roster.forEach(function (p) { delete p._st; delete p._rest; delete p._out; delete p._pf; delete p._sec; delete p._morale; delete p._tr; delete p._boost; delete p._foc; }); });
       return res;
     }
   };

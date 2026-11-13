@@ -10,7 +10,7 @@
 
   W.levelInfo = function (lv) { return X.LEVELS[lv - 1]; };
   W.diff = function (S) { return X.DIFFS[S.difficulty || 'normal'] || X.DIFFS.normal; };
-  // 各级别 AI 平均实力：基础值 + 难度偏移 + 每次重生 +2 + 地狱难度的同步加成
+  // 各级别 AI 平均实力：基础值 + 难度偏移 + 旧存档重生次数 ×2 + 地狱难度的同步加成
   W.levelAvg = function (S, lv) { return X.LEVELS[lv - 1].avg + W.diff(S).avg + 2 * (S.rebirths || 0) + (S.syncBoost || 0); };
   W.userTrainMul = function (S, p) {
     var t = p && p.teamId && S.teams[p.teamId];
@@ -270,7 +270,6 @@
     X.XCup.setup(S, true);
     X.Alliance.init(S);
     X.Ops.newSeasonRules(S);
-    applyLegacy(S);
     X.Goals.newSeason(S);
     X.Cups.daily(S);
     var lg = W.league(S, pro.leagueId);
@@ -302,6 +301,7 @@
     } else {
       cfg.presets = team.presets; cfg.config = team.config; cfg.status = 1;
     }
+    X.Challenge.applyCfg(S, team, board, cfg);
     for (var k in extra || {}) cfg[k] = extra[k];
     return cfg;
   };
@@ -352,7 +352,7 @@
     S.user.proTP = (S.user.proTP || 0) + tot;
     // 联赛、季后赛、篮途杯每场都给游戏币：赢 5、输 2（表演赛不给，避免刷）
     var won = userIsHome ? res.hs > res.as : res.as > res.hs;
-    if (!noCoins) S.user.coins += won ? W.COIN_WIN : W.COIN_LOSS;
+    if (!noCoins) { S.user.coins += won ? W.COIN_WIN : W.COIN_LOSS; X.Challenge.afterGame(S, won); }
     return tot;
   };
 
@@ -681,6 +681,7 @@
           W.giveStarcards(S, [3, 2, 1][i], lg.name + names[i]);
         });
       });
+      if (lg.teamIds.indexOf(S.user.proId) >= 0) X.Challenge.settle(S, places[0][0] === S.user.proId ? 0 : 1);
       if (st[0].isUser) { S.user.trophies.push({ season: S.season, name: lg.name + ' 常规赛第一' }); W.msg(S, '球队获得 ' + lg.name + ' 常规赛第一！', 'fin'); }
       var champ = S.teams[places[0][0]] || st[0];
       summary.champions.push({ league: lg.name, team: champ.name, isUser: !!champ.isUser });
@@ -802,6 +803,7 @@
     X.Goals.newSeason(S);
     X.Ops.newSeasonRules(S);
     if (fired) X.Ops.fire(S);
+    if (X.Challenge.eligible(S)) W.msg(S, '🔥 新赛季前 ' + X.Challenge.OPEN_DAYS + ' 天可以在「经理生涯」开启高难挑战，夺冠有额外奖励', 'sys');
     var ul = W.league(S, user.leagueId);
     W.msg(S, '第 ' + S.season + ' 赛季开始！你的球队参加 ' + ul.name, 'sys');
     out.seasonSummary = summary;
@@ -863,43 +865,8 @@
     moves.forEach(function (mv) { if (!mv.t.isUser) mv.t.fans = Math.round((mv.t.fans + FANS_BASE[mv.to]) / 2); });
   }
 
-  // ===== 重生（二周目）=====
-  W.BONUSES = {
-    train: { cn: '训练效果 +10%' }, tp: { cn: '训练点获得 +10%' }, ticket: { cn: '门票收入 +10%' },
-    money: { cn: '每次开局多 100 万资金' }, skill: { cn: '立刻获得 2 个经理技能点' }
-  };
-  W.canRebirth = function (S) { return S.user.trophies.some(function (t) { return /^篮途超级联赛 冠军$/.test(t.name); }); };
+  // 旧存档里重生（已移除的功能）留下的永久加成仍然有效
   W.legacyCount = function (S, b) { return ((S.user.legacy && S.user.legacy.bonuses) || []).filter(function (x) { return x === b; }).length; };
-  W.rebirth = function (S, hofPid, bonus) {
-    var lg = JSON.parse(JSON.stringify(S.user.legacy || { count: 0, bonuses: [], legends: [] }));
-    lg.count++; lg.bonuses.push(bonus);
-    var h = (S.hof || []).find(function (x) { return x.pid === hofPid; });
-    if (h) lg.legends.push(h);
-    var idx = X.DIFF_ORDER.indexOf(S.difficulty || 'normal');
-    var S2 = W.newGame(S.user.manager, { difficulty: X.DIFF_ORDER[Math.min(3, idx + 1)], rebirths: lg.count });
-    S2.user.legacy = lg;
-    S2.user.mgr = S.user.mgr; S2.user.ach = S.user.ach; S2.user.coins = S.user.coins;
-    S2.user.trophies = S.user.trophies.concat([{ season: S.season, name: '第 ' + lg.count + ' 次重生' }]);
-    S2.hof = S.hof; S2.records = S.records; S2.titleCount = S.titleCount;
-    S2.history = (S.history || []).map(function (x) { var y = JSON.parse(JSON.stringify(x)); y.era = lg.count; return y; });
-    if (bonus === 'skill') X.Manager.get(S2).pts += 2;
-    return S2;
-  };
-  // 新档开局时应用重生加成（在 finishOnboard 里调用）
-  function applyLegacy(S) {
-    var lg = S.user.legacy; if (!lg) return;
-    var extra = W.legacyCount(S, 'money') * 1000000;
-    if (extra) W.earn(S, extra, '重生加成：开局资金');
-    var last = lg.legends[lg.legends.length - 1];
-    lg.legends.forEach(function (h) {
-      var level = Math.max(3, Math.min(10, Math.round(h.peak / 10)));
-      var s = { id: U.uid(S, 's'), type: 'trainer', level: level, eff: Math.min(10, level + 1), legend: true, name: h.name + '（传奇）', age: h.age + 5, salary: 0, contract: 9999, teamId: null, slot: null };
-      if (h === last) { var pro = W.userPro(S); s.teamId = pro.id; pro.staff.trainer = s; }
-      else { s.salary = Math.round(600 * Math.pow(level, 1.6) / 20) * 10; s.contract = 40; S.staffPool.unshift(s); }
-    });
-    if (last) W.msg(S, '🎖 传奇 ' + last.name + ' 随你重生，成为职业队的终身训练员（' + Math.min(10, Math.round(last.peak / 10)) + ' 级，不要工资）', 'staff');
-    W.msg(S, '🔁 第 ' + lg.count + ' 次重生：难度「' + W.diff(S).cn + '」，永久加成：' + lg.bonuses.map(function (b) { return W.BONUSES[b].cn; }).join('、'), 'sys');
-  }
 
   // ===== 用户操作 =====
   W.renewContract = function (S, p, rounds) {

@@ -87,7 +87,7 @@
       presets: cfg.presets, config: cfg.config, prof: cfg.prof || { off: {}, def: {} },
       status: (cfg.status == null ? 1 : cfg.status) * P.chemistry(cfg.players), home: !!cfg.home,
       court: [], curPreset: -1, pts: 0, fouls: 0, box: {}, trailLock: false, leadLock: false,
-      used: { off: {}, def: {} }, form: 1 + U.gauss() * 0.035, autoSub: cfg.autoSub !== false && !cfg.noStamina
+      used: { off: {}, def: {} }, form: 1 + U.gauss() * 0.035, injMul: cfg.injMul || 1, fatigue: cfg.fatigue || 1, autoSub: cfg.autoSub !== false && !cfg.noStamina
     };
     side.roster.forEach(function (p) {
       p._st = cfg.noStamina ? 100 : p.st;
@@ -328,7 +328,7 @@
           onIds[p.id] = 1;
           p._sec += sec;
           if (p._heat > 0) p._heat = Math.max(0, p._heat - sec);
-          if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.013 + 0.0055 * (1 - p.a.sta / 100)) * (2 - TF(p, 'ironman', 0.25)) * drainMul * RULES.drain * (1 + (intensity - 2) * 0.25));
+          if (!opts.noStamina) p._st = Math.max(0, p._st - sec * (0.013 + 0.0055 * (1 - p.a.sta / 100)) * (2 - TF(p, 'ironman', 0.25)) * drainMul * side.fatigue * RULES.drain * (1 + (intensity - 2) * 0.25));
           side.used.off[preset(side).off] = (side.used.off[preset(side).off] || 0) + sec;
           side.used.def[preset(side).def] = (side.used.def[preset(side).def] || 0) + sec;
         });
@@ -349,7 +349,7 @@
       if (!opts.injuries) return true;
       for (var i = 0; i < side.court.length; i++) {
         var p = side.court[i];
-        var pi = (0.00011 + (p._st < 80 ? (80 - p._st) * 0.00004 : 0)) * (p.persona === 'glass' ? 1.8 : p.persona === 'iron' ? 0.5 : 1);
+        var pi = (0.00011 + (p._st < 80 ? (80 - p._st) * 0.00004 : 0)) * (p.persona === 'glass' ? 1.8 : p.persona === 'iron' ? 0.5 : 1) * side.injMul;
         if (Math.random() < pi) {
           var inj = X.INJURIES[U.wpick(X.INJURIES.map(function (x) { return 30 / (x.min + x.max); }))];
           var rounds = U.ri(inj.min, inj.max);

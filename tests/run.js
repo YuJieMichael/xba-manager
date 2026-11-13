@@ -38,11 +38,32 @@ test('旧存档逐级升级到最新版本，新游戏直接是最新版本', fu
   var up = X.Migrate.run(old);
   assert.strictEqual(up.saveVer, X.SAVE_VER);
   assert.strictEqual(up.leagues[0].name, '篮途超级联赛');
-  assert.ok(X.World.canRebirth(up), '改名后旧冠军荣誉仍能重生');
+  assert.ok(up.user.trophies.some(function (t) { return t.name === '篮途超级联赛 冠军'; }), '旧冠军荣誉改成新名字');
   assert.ok(JSON.stringify(up).indexOf('XBA杯') < 0);
   // 新版本存档不会被旧页面改动
   var future = JSON.parse(JSON.stringify(S)); future.saveVer = X.SAVE_VER + 1;
   assert.ok(X.Migrate.tooNew(future));
+  X.U.seed(null);
+});
+
+test('高难挑战：只在超级联赛前 5 天可选，词条生效，夺冠发奖励', function () {
+  var X = require('./harness')(), W = X.World, CH = X.Challenge;
+  var S = newWorld(X, 5), pro = W.userPro(S);
+  assert.ok(CH.set(S, ['elite']), '不在超级联赛时不能开启');
+  pro.level = 1;
+  assert.ok(CH.set(S, ['elite2']), '没有前置词条不能选');
+  assert.strictEqual(CH.set(S, ['elite', 'elite2', 'locker', 'injury']), null);
+  assert.strictEqual(CH.cur(S).pts, 10);
+  var lg = W.league(S, pro.leagueId), opp = S.teams[lg.teamIds.find(function (i) { return i !== pro.id; })];
+  assert.ok(Math.abs(W.sideCfg(S, opp, 'league').status / W.lineupStatus(S, opp) - 1.25) < 1e-9, '对手 +25%');
+  assert.strictEqual(W.sideCfg(S, opp, 'cup').status, W.lineupStatus(S, opp), '杯赛不受影响');
+  assert.strictEqual(W.sideCfg(S, pro, 'league').injMul, 2.5);
+  var c0 = S.user.coins, k0 = S.user.items.starcard || 0;
+  CH.settle(S, 0);
+  assert.strictEqual(S.user.coins - c0, 1500);
+  assert.strictEqual((S.user.items.starcard || 0) - k0, 10);
+  S.day = CH.OPEN_DAYS + 1;
+  assert.ok(CH.set(S, []), '第 6 天以后锁定');
   X.U.seed(null);
 });
 

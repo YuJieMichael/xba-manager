@@ -1,4 +1,4 @@
-// 页面：王朝纪录、传奇挑战赛、重生（二周目）、难度显示
+// 页面：王朝纪录、传奇挑战赛、难度显示
 (function (X) {
   var U = X.U, P = X.P, UI = X.UI, V = UI.views, A = UI.acts, esc = U.esc;
   var W = function () { return X.World; };
@@ -35,39 +35,45 @@
     return h;
   };
 
-  // 经理生涯页加“重生”
-  var origManager = V.manager;
-  V.manager = function () {
-    var S = UI.S, h = origManager();
-    var lg = S.user.legacy;
-    h += UI.box('🔁 重生（二周目）', (lg ? '<p>已重生 <b>' + lg.count + '</b> 次　永久加成：' + lg.bonuses.map(function (b) { return W().BONUSES[b].cn; }).join('、') + (lg.legends.length ? '　传奇职员：' + lg.legends.map(function (x) { return esc(x.name); }).join('、') : '') + '</p>' : '') +
-      '<p>当前难度：<b>' + W().diff(S).cn + '</b>。拿到<b>篮途超级联赛总冠军</b>后可以重生：从 4 级联赛重新开始，难度提升一档（最高地狱），每次重生 AI 再强 2 点。保留经理等级和技能、成就、荣誉、名人堂、联盟纪录和游戏币；带走一名名人堂球员当终身训练员，再选一项永久加成（可以叠加）。</p>' +
-      (W().canRebirth(S) ? UI.btn('我要重生', 'rebirth', {}, 'big') : '<span class="muted">还没拿到超级联赛总冠军。</span>'));
+  // 经理生涯页：高难挑战
+  var CH = function () { return X.Challenge; };
+  UI.challengeBox = function (S) {
+    var c = CH().cur(S), edit = CH().canEdit(S), pick = UI.chalPick || (c ? c.mods.slice() : []);
+    var h = '<p>打进<b>篮途超级联赛</b>后，每赛季前 ' + CH().OPEN_DAYS + ' 天可以自选难度词条，只影响本赛季的联赛和季后赛。拿下联赛总冠军获得 <b>难度 × 150 游戏币</b>、<b>难度 × 1 张升星卡</b>和荣誉；没拿到冠军没有惩罚。你的球员本身不会被削弱。</p>';
+    if (!CH().eligible(S)) return h + '<p class="muted">还没打进篮途超级联赛。</p>';
+    h += '<table class="grid"><tr><th></th><th>词条</th><th>效果</th><th>难度</th></tr>' + CH().MODS.map(function (m) {
+      var on = pick.indexOf(m.id) >= 0;
+      return '<tr><td><input type="checkbox" data-change="chalpick" data-id="' + m.id + '"' + (on ? ' checked' : '') + (edit ? '' : ' disabled') + '></td><td><b>' + m.cn + '</b></td><td class="small">' + m.desc + '</td><td>+' + m.pts + '</td></tr>';
+    }).join('') + '</table>';
+    var pts = CH().points(pick), r = CH().reward(pts);
+    h += '<p>已选难度：<b class="red">' + pts + ' 级</b>　夺冠奖励：' + r.coins + ' 游戏币 + ' + r.cards + ' 张升星卡' + (S.user.chalBest ? '　历史最高：' + S.user.chalBest + ' 级' : '') + '</p>';
+    if (edit) h += '<p>' + UI.btn(c ? '修改本赛季挑战' : '开启本赛季挑战', 'chalset', {}, 'on') + ' <span class="small muted">第 ' + CH().OPEN_DAYS + ' 天之后锁定</span></p>';
+    else h += '<p class="muted">' + (c ? '本赛季挑战已锁定：' + c.mods.map(function (id) { return CH().mod(id).cn; }).join('、') : '本赛季没有开启挑战，下赛季前 ' + CH().OPEN_DAYS + ' 天可以选择。') + '</p>';
     return h;
   };
-  A.rebirth = function () {
-    var S = UI.S;
-    var hof = (S.hof || []).filter(function (x) { return x.kind !== 'street'; });
-    var idx = X.DIFF_ORDER.indexOf(S.difficulty || 'normal'), next = X.DIFFS[X.DIFF_ORDER[Math.min(3, idx + 1)]];
-    UI.modal('重生', '<div class="form"><label>带走的传奇（成为新档职业队终身训练员）<select id="rb-hof"><option value="">（不带）</option>' + hof.map(function (x) { return '<option value="' + x.pid + '">' + esc(x.name) + '（' + x.pos + '，巅峰 ' + x.peak + '）</option>'; }).join('') + '</select></label>' +
-      '<label>永久加成 <select id="rb-bonus">' + Object.keys(W().BONUSES).map(function (k) { var n = W().legacyCount(S, k); return '<option value="' + k + '">' + W().BONUSES[k].cn + (n ? '（已有 ' + n + ' 次）' : '') + '</option>'; }).join('') + '</select></label></div>' +
-      '<p>新档难度：<b>' + next.cn + '</b>（' + next.desc + '）</p><p class="red">当前世界会被新世界替换，建议先到「存档设置」导出备份。</p><p>' + UI.btn('确认重生', 'rebirthdo', {}, 'big') + ' ' + UI.btn('取消', 'closemodal') + '</p>');
+  var origManager = V.manager;
+  V.manager = function () { return origManager() + UI.box('🔥 高难挑战', UI.challengeBox(UI.S)); };
+  A.chalpick = function (d, el) {
+    var c = CH().cur(UI.S), pick = UI.chalPick || (c ? c.mods.slice() : []);
+    pick = pick.filter(function (x) { return x !== d.id; });
+    if (el.checked) pick.push(d.id);
+    // 去掉前置词条时，依赖它的词条一起去掉
+    for (var i = 0; i < 3; i++) pick = pick.filter(function (x) { var m = CH().mod(x); return !m.need || pick.indexOf(m.need) >= 0; });
+    UI.chalPick = pick; UI.render();
   };
-  A.rebirthdo = function () {
-    var S = UI.S, S2 = W().rebirth(S, document.getElementById('rb-hof').value, document.getElementById('rb-bonus').value);
-    UI.closeModal();
-    UI.S = S2;
-    UI.ob = { step: 1, manager: S.user.manager, teamName: '', color: '#c8102e', pro: {}, street: {} };
-    UI.route = 'home';
-    document.getElementById('app').innerHTML = '';
-    UI.render();
+  A.chalset = function () {
+    var pick = UI.chalPick || [], err = CH().set(UI.S, pick);
+    if (err) return UI.toast(err, true);
+    UI.chalPick = null;
+    UI.result(null, pick.length ? '本赛季高难挑战：' + CH().points(pick) + ' 级' : '已取消本赛季挑战');
   };
 
   // 状态栏显示难度
   var origStatus = UI.status;
   UI.status = function () {
     var S = UI.S, h = origStatus();
-    var tag = '<span class="tag diff-' + (S.difficulty || 'normal') + '">' + W().diff(S).cn + (S.rebirths ? ' · 重生' + S.rebirths : '') + '</span>';
+    var c = X.Challenge.cur(S);
+    var tag = '<span class="tag diff-' + (S.difficulty || 'normal') + '">' + W().diff(S).cn + '</span>' + (c ? ' <span class="tag" style="background:#d0202e;color:#fff">🔥挑战' + c.pts + '级</span>' : '');
     return h.replace('经理</div>', '经理 ' + tag + '</div>');
   };
 

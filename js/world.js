@@ -285,7 +285,7 @@
     var main = W.teamPlayers(S, team).map(function (p) { return p.salary; }).sort(function (a, b) { return b - a; }).slice(0, 8);
     var tot = U.sum(main), cap = W.cap(team);
     if (tot <= cap) return 1;
-    return Math.max(0.7, 1 - (tot - cap) / cap * 0.6);
+    return Math.max(0.8, 1 - (tot - cap) / cap * 0.6); // 最低 80%
   };
 
   // 引擎参数

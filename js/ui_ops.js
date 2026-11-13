@@ -42,10 +42,20 @@
     extra += '</div>';
     var btns = '';
     if (mine && t.kind === 'pro' && !pr) btns += UI.btn('许下承诺', 'promise', { pid: p.id }, 'sm');
+    // 其他职业队的球员：一键发起交易；在转会市场挂牌的：去出价
+    var lst = p.listing && S.market.find(function (l) { return l.id === p.listing; });
+    if (!mine && lst && lst.seller !== 'user') btns += UI.btn('去转会市场出价', 'cardmarket', { mk: lst.mk }, 'sm on');
+    else if (!mine && t && t.kind === 'pro' && X.Trade.open(S)) btns += UI.btn('发起交易', 'cardtrade', { pid: p.id }, 'sm on');
     if (!mine && O().knowLevel(S, p) < 3) btns += UI.btn('派球探考察' + ((S.user.scoutPts || 0) > 0 ? '（免费 ' + S.user.scoutPts + ' 次）' : '（' + U.wan(5000 * (O().knowLevel(S, p) + 1)) + '）'), 'scoutp', { pid: p.id }, 'sm');
     h = h.replace('<div class="minitabs">', extra + (btns ? '<div class="card-acts">' + btns + '</div>' : '') + '<div class="minitabs">');
     return h;
   };
+  A.cardtrade = function (d) {
+    var p = UI.S.players[d.pid], take = {}; take[p.id] = 1;
+    UI.trade = { tid: p.teamId, give: {}, take: take, money: 0, ev: null };
+    UI.go('trade');
+  };
+  A.cardmarket = function (d) { UI.tab.market = d.mk; UI.go('market'); };
   A.scoutp = function (d) {
     var err = O().scoutPlayer(UI.S, d.pid);
     if (err) return UI.toast(err, true);

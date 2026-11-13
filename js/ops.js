@@ -313,6 +313,7 @@
     var t = p.teamId && S.teams[p.teamId];
     if (t && t.isUser) return 3;
     if (p.seen && p.seen.pot) return 3;
+    if (p.wasMine || p.scoutGrade != null || (p.seen && p.seen.hidden)) return 3; // 自己带过 / 考察过隐藏属性的球员
     var base = O.fac(S, 'scout') >= 4 ? 2 : O.fac(S, 'scout') >= 2 ? 1 : 0;
     if (X.Manager.lv(S, 'eye') >= 1) base = Math.max(base, 1);
     return Math.max(base, (S.scouted && S.scouted[p.id]) || 0);

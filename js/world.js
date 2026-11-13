@@ -88,6 +88,7 @@
   W.removeFromTeam = function (S, team, p) {
     team.playerIds = team.playerIds.filter(function (id) { return id !== p.id; });
     p.teamId = null;
+    if (team.isUser) p.wasMine = true; // 自己带过的球员，离队后仍然看得清
     // 从战术预设中移除
     W.allPresets(team).forEach(function (pr) { pr.lineup = pr.lineup.map(function (id) { return id === p.id ? null : id; }); });
   };
